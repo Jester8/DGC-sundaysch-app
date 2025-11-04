@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Dgc",
+    "slug": "DGC",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/dgc.png",
+    "scheme": "dgc",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/dgc.png",
+        "backgroundImage": "./assets/images/dgc.png",
+        "monochromeImage": "./assets/images/dgc.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.kalex231.DGC"
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/dgc.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/dgc.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#390054",
+          "dark": {
+            "backgroundColor": "#390054"
+          }
+        }
+      ],
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3904628e-c941-4a45-a724-8f155676c790"
+      }
+    }
+  }
+}
