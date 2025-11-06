@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 29,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     marginBottom: 16,
   },
   searchInput: {
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   },
   monthButton: {
     backgroundColor: "#B800E6",
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
     flexDirection: "row",

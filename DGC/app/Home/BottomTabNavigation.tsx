@@ -14,13 +14,18 @@ export default function BottomTabNavigation() {
   };
 
   const handleMenuPress = (menu: string) => {
-    setActiveTab(menu);
     if (menu === "Outlines") {
+      setActiveTab("Outlines");
       router.push("/Home/outline");
     } else if (menu === "noted") {
+      setActiveTab("noted");
       router.push("/Home/noted");
     } else if (menu === "Home") {
+      setActiveTab("Home");
       router.push("/Home/home");
+    } else if (menu === "Profile") {
+      setActiveTab("Profile");
+      router.push("/Home/Signup");
     }
   };
 

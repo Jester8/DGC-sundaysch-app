@@ -212,7 +212,7 @@ export default function Onboarding() {
             style={{
               backgroundColor: "#FFFFFF",
               borderRadius: 40,
-              paddingVertical: isSmallDevice ? 8 : 8,
+              paddingVertical: isSmallDevice ? 8 : 4,
               paddingHorizontal: isSmallDevice ? 16 : 20,
               alignSelf: "start",
               flexDirection: "row",
@@ -238,7 +238,7 @@ export default function Onboarding() {
             <View
               style={{
                 width: isSmallDevice ? 30 : 36,
-                height: isSmallDevice ? 30 : 36,
+                height: isSmallDevice ? 30 : 33,
                 borderRadius: 10,
                 backgroundColor: "#49006C",
                 alignItems: "center",
