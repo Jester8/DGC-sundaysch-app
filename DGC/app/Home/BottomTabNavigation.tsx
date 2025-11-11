@@ -8,9 +8,22 @@ export default function BottomTabNavigation() {
   const router = useRouter();
   const { activeTab, setActiveTab, isDarkMode } = useNavigation();
 
+ 
+  const isTablet = width > 768;
+
   const getResponsiveSize = (baseSize: number) => {
-    const scale = width / 375;
-    return Math.max(baseSize * scale, baseSize * 0.8);
+    let scale;
+    
+    if (isTablet) {
+  
+      scale = width / 800;
+      
+      return Math.max(baseSize * scale * 0.6, baseSize * 0.5);
+    } else {
+     
+      scale = width / 375;
+      return Math.max(baseSize * scale, baseSize * 0.8);
+    }
   };
 
   const handleMenuPress = (menu: string) => {
@@ -38,8 +51,8 @@ export default function BottomTabNavigation() {
         paddingVertical: getResponsiveSize(12),
         paddingHorizontal: getResponsiveSize(16),
         borderTopWidth: 1,
-        borderTopColor: isDarkMode ? "#333333" : "#f0f0f0",
-        backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+        borderTopColor: isDarkMode ? "#000000ff" : "#f0f0f0",
+        backgroundColor: isDarkMode ? "#000000ff" : "#ffffff",
       }}
     >
       <TouchableOpacity

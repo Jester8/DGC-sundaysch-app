@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+ import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -127,7 +127,7 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
 
   const isSmallDevice = width < 350;
   const isMediumDevice = width >= 350 && width < 500;
-  const isLargeDevice = width >= 768; // Tablet
+  const isLargeDevice = width >= 768; 
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -148,12 +148,12 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
     imageHeight: getResponsiveSize(80),
   };
 
-  const titleFontSize = getResponsiveSize(14);
-  const versesFontSize = getResponsiveSize(12);
-  const categoryFontSize = getResponsiveSize(10);
-  const dateFontSize = getResponsiveSize(11);
-  const headerFontSize = getResponsiveSize(13);
-  const seeAllFontSize = getResponsiveSize(14);
+  const titleFontSize = getResponsiveSize(9);
+  const versesFontSize = getResponsiveSize(9);
+  const categoryFontSize = getResponsiveSize(9);
+  const dateFontSize = getResponsiveSize(9);
+  const headerFontSize = getResponsiveSize(9);
+  const seeAllFontSize = getResponsiveSize(9);
 
   const renderRecommendedItem = ({ item }: { item: RecommendedItem }) => (
     <TouchableOpacity
@@ -164,7 +164,7 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
         marginBottom: getResponsiveSize(12),
         paddingHorizontal: getResponsiveSize(12),
         paddingVertical: getResponsiveSize(10),
-        borderWidth: 1,
+        borderWidth: 0.7,
         borderColor: "#000000",
         borderRadius: getResponsiveSize(14),
         backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
@@ -261,7 +261,7 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
       <Text
         style={{
           fontSize: headerFontSize,
-          fontFamily: "Poppins_700Bold",
+          fontFamily: "Poppins_600SemiBold",
           color: isDarkMode ? "#ffffff" : "#000000",
           marginBottom: getResponsiveSize(12),
         }}
@@ -273,7 +273,7 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
         <View
           style={{
             width: "100%",
-            height: getResponsiveSize(60),
+            height: getResponsiveSize(40),
             backgroundColor: "#9d00d4",
             borderRadius: getResponsiveSize(16),
             paddingHorizontal: getResponsiveSize(16),
@@ -286,7 +286,7 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
         >
           <Text
             style={{
-              fontSize: getResponsiveSize(16),
+              fontSize: getResponsiveSize(10),
               fontFamily: "Poppins_500Medium",
               color: "#ffffff",
             }}
@@ -295,8 +295,8 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
           </Text>
           <View
             style={{
-              width: getResponsiveSize(36),
-              height: getResponsiveSize(36),
+              width: getResponsiveSize(25),
+              height: getResponsiveSize(25),
               borderRadius: getResponsiveSize(8),
               backgroundColor: "rgba(255, 252, 252, 0.94)",
               alignItems: "center",
@@ -305,7 +305,7 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
           >
             <Ionicons
   name="arrow-forward"
-  size={isSmallDevice ? 16 : 22}
+  size={isSmallDevice ? 16 : 20}
   color="#8c17c2ff"
 />
           </View>
@@ -324,7 +324,7 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
         <Text
           style={{
             fontSize: headerFontSize,
-            fontFamily: "Poppins_700Bold",
+            fontFamily: "Poppins_600SemiBold",
             color: isDarkMode ? "#ffffff" : "#000000",
           }}
         >

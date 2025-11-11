@@ -14,6 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useNavigation } from "./Home/_navigationContext";
 
 interface OnboardingSlide {
   id: string;
@@ -58,6 +59,7 @@ export default function Onboarding() {
   const isMediumDevice = width >= 350 && width < 500;
   
   const router = useRouter();
+  const { setHasCompletedOnboarding } = useNavigation();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const progress = useRef(new Animated.Value(0)).current;
@@ -88,6 +90,10 @@ export default function Onboarding() {
 
   const getResponsivePadding = (basePadding: number) => {
     return Math.max(basePadding * (width / 375), basePadding * 0.8);
+  };
+
+  const handleCompleteOnboarding = () => {
+    setHasCompletedOnboarding(true);
   };
 
   const renderSlide = ({ item, index }: { item: OnboardingSlide; index: number }) => (
@@ -143,7 +149,7 @@ export default function Onboarding() {
         </View>
         {index !== slides.length - 1 && (
           <TouchableOpacity
-            onPress={() => router.push("/Home/home")}
+            onPress={handleCompleteOnboarding}
             style={{ alignSelf: "flex-end", marginTop: 6 }}
           >
             <Text
@@ -208,11 +214,11 @@ export default function Onboarding() {
         {index === slides.length - 1 && (
           <TouchableOpacity
             activeOpacity={0.9}
-            onPress={() => router.push("/Home/home")}
+            onPress={handleCompleteOnboarding}
             style={{
               backgroundColor: "#FFFFFF",
               borderRadius: 40,
-              paddingVertical: isSmallDevice ? 8 : 4,
+              paddingVertical: isSmallDevice ? 12 : 8,
               paddingHorizontal: isSmallDevice ? 16 : 20,
               alignSelf: "start",
               flexDirection: "row",
@@ -246,12 +252,11 @@ export default function Onboarding() {
                 marginLeft: 12,
               }}
             >
-             <Ionicons
-  name="arrow-forward"
-  size={isSmallDevice ? 18 : 22}
-  color="#FFFFFF"
-/>
-
+              <Ionicons
+                name="arrow-forward"
+                size={isSmallDevice ? 18 : 22}
+                color="#FFFFFF"
+              />
             </View>
           </TouchableOpacity>
         )}

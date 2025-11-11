@@ -26,15 +26,15 @@ export default function Header({ isDarkMode, onToggleDarkMode }: HeaderProps) {
         alignItems: "center",
         paddingHorizontal: getResponsiveSize(16),
         paddingVertical: getResponsiveSize(10),
-        backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+        backgroundColor: isDarkMode ? "#000000ff" : "#ffffff",
       }}
     >
       {/* Logo (Switches between dark/light) */}
       <Image
         source={
           isDarkMode
-            ? require("@/assets/images/main.png")
-            : require("@/assets/images/dark.png")
+            ? require("@/assets/images/dark.png")
+            : require("@/assets/images/light.png")
         }
         style={{
           width: logoSize,

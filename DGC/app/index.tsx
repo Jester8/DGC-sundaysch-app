@@ -2,10 +2,12 @@ import { useEffect } from "react";
 import { View, Image, useWindowDimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useNavigation } from "./Home/_navigationContext";
 
 export default function Index() {
   const { width, height } = useWindowDimensions();
   const router = useRouter();
+  const { hasCompletedOnboarding, isLoading } = useNavigation();
 
   const isMobile = width < 600;
   const isTablet = width >= 600 && width < 1024;
@@ -13,12 +15,18 @@ export default function Index() {
   const logoSize = isMobile ? 120 : isTablet ? 160 : 200;
 
   useEffect(() => {
+    if (isLoading) return;
+
     const timer = setTimeout(() => {
-      router.push("/onboarding");
+      if (hasCompletedOnboarding) {
+        router.push("/Home/home");
+      } else {
+        router.push("/onboarding");
+      }
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [router, hasCompletedOnboarding, isLoading]);
 
   return (
     <View style={{ flex: 1 }}>

@@ -129,7 +129,7 @@ export default function Signup(): React.ReactElement {
     },
     bannerContainer: {
       width: '100%',
-      height: isMobile ? 120 : isTablet ? 180 : 240,
+      height: isMobile ? 120 : isTablet ? 230 : 240,
       borderRadius: 16,
       overflow: 'hidden',
       marginBottom: 16,

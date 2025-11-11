@@ -53,12 +53,12 @@ export default function Note({ isDarkMode }: NoteProps) {
     return Math.max(baseSize * scale, baseSize * 0.8);
   };
 
-  const containerPadding = getResponsiveSize(16);
+  const containerPadding = getResponsiveSize(12);
   const cardSpacing = getResponsiveSize(12);
   const cardWidth = (width - containerPadding * 2 - cardSpacing) / 2;
-  const headerFontSize = getResponsiveSize(13);
-  const seeAllFontSize = getResponsiveSize(14);
-  const cardTitleFontSize = getResponsiveSize(13);
+  const headerFontSize = getResponsiveSize(10);
+  const seeAllFontSize = getResponsiveSize(10);
+  const cardTitleFontSize = getResponsiveSize(10);
 
   const renderNoteCard = ({ item, index }: { item: NoteItem; index: number }) => {
     const isLastCard = index === notesData.length - 1;
@@ -94,12 +94,12 @@ export default function Note({ isDarkMode }: NoteProps) {
           <View style={{ alignItems: "center", justifyContent: "center" }}>
             <Ionicons
               name="document-outline"
-              size={getResponsiveSize(40)}
+              size={getResponsiveSize(30)}
               color={isDarkMode ? "#666666" : "#000000"}
             />
             <Text
               style={{
-                fontSize: getResponsiveSize(13),
+                fontSize: getResponsiveSize(10),
                 fontFamily: "Poppins_500Medium",
                 color: isDarkMode ? "#b0b0b0" : "#666666",
                 marginTop: getResponsiveSize(8),
@@ -134,7 +134,7 @@ export default function Note({ isDarkMode }: NoteProps) {
         <Text
           style={{
             fontSize: headerFontSize,
-            fontFamily: "Poppins_700Bold",
+            fontFamily: "Poppins_600SemiBold",
             color: isDarkMode ? "#ffffff" : "#000000",
           }}
         >
@@ -144,7 +144,7 @@ export default function Note({ isDarkMode }: NoteProps) {
           <Text
             style={{
               fontSize: seeAllFontSize,
-              fontFamily: "Poppins_500Medium",
+              fontFamily: "Poppins_600SemiBold",
               color: isDarkMode ? "#ffffff" : "#000000",
               textDecorationLine: "underline",
             }}

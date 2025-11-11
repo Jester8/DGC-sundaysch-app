@@ -65,7 +65,7 @@ export default function Home() {
     <View
       style={{
         width: width - getResponsiveSize(32),
-        height: isLandscape ? getResponsiveSize(130) : getResponsiveSize(170),
+        height: isLandscape ? getResponsiveSize(100) : getResponsiveSize(150),
         borderRadius: getResponsiveSize(16),
         overflow: "hidden",
         marginHorizontal: getResponsiveSize(16),
@@ -90,16 +90,16 @@ export default function Home() {
         setCurrentBannerIndex(index);
       }}
       style={{
-        width: index === currentBannerIndex ? getResponsiveSize(8) : getResponsiveSize(6),
-        height: getResponsiveSize(6),
-        borderRadius: getResponsiveSize(3),
+        width: index === currentBannerIndex ? getResponsiveSize(15) : getResponsiveSize(5),
+        height: getResponsiveSize(2),
+        borderRadius: getResponsiveSize(5),
         backgroundColor:
           index === currentBannerIndex
             ? isDarkMode
               ? "#ffffff"
               : "#ffffffff"
             : isDarkMode
-            ? "rgba(255,255,255,0.3)"
+            ? "rgba(0, 0, 0, 0.3)"
             : "rgba(73,0,108,0.3)",
         marginHorizontal: getResponsiveSize(4),
       }}

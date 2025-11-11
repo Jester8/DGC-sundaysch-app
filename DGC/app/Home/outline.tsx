@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { AntDesign } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import OutlineCard from "./card";
 import BottomTabNavigation from "./BottomTabNavigation";
 import { useNavigation } from "./_navigationContext";
@@ -62,10 +62,10 @@ export default function Outline() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? "#000000" : "#FFF" }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={[styles.title, { color: isDarkMode ? "#FFF" : "#000" }]}>DGC SUNDAY</Text>
-        <Text style={[styles.subtitle, { color: isDarkMode ? "#FFF" : "#000" }]}>SCHOOL Outlines</Text>
+       
+        <Text style={[styles.subtitle, { color: isDarkMode ? "#FFF" : "#000" }]}>Outlines</Text>
 
-        <View style={[styles.searchContainer, { borderColor: isDarkMode ? "#333" : "#000", backgroundColor: isDarkMode ? "#1a1a1a" : "#FFF" }]}>
+        <View style={[styles.searchContainer, { borderColor: isDarkMode ? "#FFF" : "#000", backgroundColor: isDarkMode ? "#1a1a1a" : "#FFF" }]}>
          <Feather name="search" size={19} color={isDarkMode ? "#666" : "#999"} />
 
           <TextInput
@@ -85,10 +85,11 @@ export default function Outline() {
                 onPress={() => toggleMonth(month.name)}
               >
                 <Text style={styles.monthButtonText}>{month.name}</Text>
-                <AntDesign
-                  name={expandedMonth === month.name ? "down" : "down"}
-                  size={16}
+                <MaterialIcons
+                  name={expandedMonth === month.name ? "expand-less" : "expand-more"}
+                  size={32}
                   color="#FFF"
+                  weight="900"
                 />
               </TouchableOpacity>
 
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
+    borderWidth: 2,
     borderRadius: 29,
     paddingHorizontal: 16,
     paddingVertical: 8,

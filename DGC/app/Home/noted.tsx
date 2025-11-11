@@ -22,6 +22,7 @@ interface Note {
 export default function Noted() {
   const { isDarkMode } = useNavigation();
   const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
   const [notes, setNotes] = useState<Note[]>([
     {
       id: "1",
@@ -77,9 +78,7 @@ export default function Noted() {
       ]}
     >
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={[styles.title, { color: isDarkMode ? "#FFF" : "#000" }]}>
-          Sunday School
-        </Text>
+       
         <Text style={[styles.subtitle, { color: isDarkMode ? "#FFF" : "#000" }]}>
           Notes
         </Text>
@@ -125,10 +124,14 @@ export default function Noted() {
       </ScrollView>
 
       <TouchableOpacity
-        style={styles.fab}
+        style={[
+          styles.fab,
+          isTablet ? styles.fabTabletTop : styles.fabPhoneBottom,
+          { backgroundColor: isDarkMode ? "#1a1a1a" : "#000000" },
+        ]}
         onPress={handleAddNote}
       >
-        <Feather name="plus" size={28} color="#FFFFFF" />
+        <Feather name="plus" size={28} color={isDarkMode ? "#B800E6" : "#FFFFFF"} />
       </TouchableOpacity>
 
       <BottomTabNavigation />
@@ -200,7 +203,6 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: "absolute",
-    bottom: 150,
     right: 16,
     width: 56,
     height: 56,
@@ -213,5 +215,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 5,
+  },
+  fabPhoneBottom: {
+    bottom: 150,
+  },
+  fabTabletTop: {
+    top: 880,
   },
 });
