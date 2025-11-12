@@ -1,62 +1,29 @@
- import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
-  Image,
   FlatList,
   TouchableOpacity,
   useWindowDimensions,
-  ActivityIndicator,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-interface RecommendedItem {
-  id: string;
-  title: string;
-  image: NodeRequire;
-  verses: string;
-  category: string;
-  date: string;
-}
+const API_BASE_URL = "http://192.168.56.2:5000";
 
-const recommendedData: RecommendedItem[] = [
-  {
-    id: "1",
-    title: "The King's Responsibilities to His Citizens",
-    image: require("@/assets/images/king.png"),
-    verses: "Isaiah 9:7; Psalm 23:1; Psalm 9:7–8",
-    category: "THE KING OF THE KINGDOM",
-    date: "Sun, 19th Oct, 2025",
-  },
-  {
-    id: "2",
-    title: "How the King Reigns (The Modus Operandi of the King)",
-    image: require("@/assets/images/king.png"),
-    verses: "Psalm 103:19; Revelation 19:11–16",
-    category: "THE KING OF THE KINGDOM",
-    date: "Sun, 12th Oct, 2025",
-  },
-  {
-    id: "3",
-    title: "Who Is The King of The Kingdom",
-    image: require("@/assets/images/king.png"),
-    verses: "Isaiah 9:6–7; Psalm 24:7–10; Revelation 19:6",
-    category: "THE KING OF THE KINGDOM",
-    date: "Sun, 5th Oct, 2025",
-  },
-  {
-    id: "4",
-    title: "The Heart of Worship",
-    image: require("@/assets/images/wor.png"),
-    verses: "Matthew 22:37–38",
-    category: "WORSHIP",
-    date: "Sun, 28th Sept, 2025",
-  },
-];
+interface RecommendedItem {
+  _id: string;
+  title: string;
+  theme: string;
+  memoryVerse: string;
+  month: string;
+  date: string;
+  imageUrl?: string;
+}
 
 interface SkeletonLoaderProps {
   isDarkMode: boolean;
-  itemSize: { width: number; imageSize: number; imageHeight: number };
+  itemSize: { width: number };
 }
 
 const SkeletonLoader = ({ isDarkMode, itemSize }: SkeletonLoaderProps) => (
@@ -73,18 +40,6 @@ const SkeletonLoader = ({ isDarkMode, itemSize }: SkeletonLoaderProps) => (
       backgroundColor: isDarkMode ? "#1a1a1a" : "#f9f9f9",
     }}
   >
-    {/* Image Skeleton */}
-    <View
-      style={{
-        width: itemSize.imageSize,
-        height: itemSize.imageHeight,
-        borderRadius: itemSize.width * 0.04,
-        marginRight: itemSize.width * 0.04,
-        backgroundColor: isDarkMode ? "#333333" : "#e0e0e0",
-      }}
-    />
-
-    {/* Text Skeleton */}
     <View style={{ flex: 1 }}>
       <View
         style={{
@@ -123,19 +78,47 @@ interface RecommendedProps {
 export default function Recommended({ isDarkMode }: RecommendedProps) {
   const { width } = useWindowDimensions();
   const [loading, setLoading] = useState(true);
+  const [recommendedData, setRecommendedData] = useState<RecommendedItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [continueLoading, setContinueLoading] = useState(true);
 
   const isSmallDevice = width < 350;
-  const isMediumDevice = width >= 350 && width < 500;
-  const isLargeDevice = width >= 768; 
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 5000);
+    fetchRecommended();
 
-    return () => clearTimeout(timer);
+    const continueTimer = setTimeout(() => {
+      setContinueLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(continueTimer);
   }, []);
+
+  const fetchRecommended = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`${API_BASE_URL}/api/manuals/recommended`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setRecommendedData(data.data);
+        setLoading(false); 
+      } else {
+        throw new Error("Failed to fetch recommended manuals");
+      }
+    } catch (err) {
+      console.error("Error fetching recommended:", err);
+      setError(err instanceof Error ? err.message : "Unknown error occurred");
+      setLoading(false);
+    }
+  };
 
   const getResponsiveSize = (baseSize: number) => {
     const scale = width / 375;
@@ -170,21 +153,20 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
         backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
       }}
     >
-      {/* Item Image */}
-      <Image
-        source={item.image}
-        style={{
-          width: itemSize.imageSize,
-          height: itemSize.imageHeight,
-          borderRadius: getResponsiveSize(10),
-          marginRight: getResponsiveSize(10),
-          resizeMode: "cover",
-        }}
-      />
+      {item.imageUrl && (
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={{
+            width: itemSize.imageSize,
+            height: itemSize.imageHeight,
+            borderRadius: getResponsiveSize(10),
+            marginRight: getResponsiveSize(10),
+            resizeMode: "cover",
+          }}
+        />
+      )}
 
-      {/* Item Content */}
       <View style={{ flex: 1 }}>
-        {/* Title */}
         <Text
           numberOfLines={2}
           style={{
@@ -197,7 +179,6 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
           {item.title}
         </Text>
 
-        {/* Verses */}
         <Text
           numberOfLines={1}
           style={{
@@ -207,12 +188,17 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
             marginBottom: getResponsiveSize(6),
           }}
         >
-          {item.verses}
+          {item.memoryVerse}
         </Text>
 
-        {/* Category and Date */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: getResponsiveSize(6), flexWrap: "wrap" }}>
-          {/* Category Badge */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: getResponsiveSize(6),
+            flexWrap: "wrap",
+          }}
+        >
           <View
             style={{
               backgroundColor: "#9d00d4",
@@ -229,11 +215,10 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
                 color: "#ffffff",
               }}
             >
-              {item.category}
+              {item.theme}
             </Text>
           </View>
 
-          {/* Date */}
           <Text
             numberOfLines={1}
             style={{
@@ -257,7 +242,6 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
         backgroundColor: isDarkMode ? "#000000" : "#ffffff",
       }}
     >
-      {/* Continue Last Read */}
       <Text
         style={{
           fontSize: headerFontSize,
@@ -304,15 +288,14 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
             }}
           >
             <Ionicons
-  name="arrow-forward"
-  size={isSmallDevice ? 16 : 20}
-  color="#8c17c2ff"
-/>
+              name="arrow-forward"
+              size={isSmallDevice ? 16 : 20}
+              color="#8c17c2ff"
+            />
           </View>
         </View>
       ) : null}
 
-      {/* Header */}
       <View
         style={{
           flexDirection: "row",
@@ -328,7 +311,7 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
             color: isDarkMode ? "#ffffff" : "#000000",
           }}
         >
-          Recommended 
+          Recommended
         </Text>
         <TouchableOpacity activeOpacity={0.7}>
           <Text
@@ -344,8 +327,55 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
         </TouchableOpacity>
       </View>
 
-      {/* Loading State */}
-      {loading ? (
+      {error ? (
+        <View
+          style={{
+            paddingVertical: getResponsiveSize(16),
+            alignItems: "center",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: titleFontSize,
+              fontFamily: "Poppins_600SemiBold",
+              color: "#FF6B6B",
+              marginBottom: getResponsiveSize(8),
+            }}
+          >
+            ⚠️ Error Loading
+          </Text>
+          <Text
+            style={{
+              fontSize: versesFontSize,
+              fontFamily: "Poppins_400Regular",
+              color: isDarkMode ? "#b0b0b0" : "#666666",
+              textAlign: "center",
+            }}
+          >
+            {error}
+          </Text>
+          <TouchableOpacity
+            onPress={fetchRecommended}
+            style={{
+              marginTop: getResponsiveSize(12),
+              paddingHorizontal: getResponsiveSize(16),
+              paddingVertical: getResponsiveSize(8),
+              backgroundColor: "#9d00d4",
+              borderRadius: getResponsiveSize(8),
+            }}
+          >
+            <Text
+              style={{
+                color: "#ffffff",
+                fontFamily: "Poppins_600SemiBold",
+                fontSize: versesFontSize,
+              }}
+            >
+              Retry
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : loading ? (
         <View>
           {[1, 2, 3, 4].map((index) => (
             <SkeletonLoader
@@ -355,13 +385,30 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
             />
           ))}
         </View>
-      ) : (
+      ) : recommendedData.length > 0 ? (
         <FlatList
           data={recommendedData}
           renderItem={renderRecommendedItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id}
           scrollEnabled={false}
         />
+      ) : (
+        <View
+          style={{
+            paddingVertical: getResponsiveSize(20),
+            alignItems: "center",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: titleFontSize,
+              fontFamily: "Poppins_400Regular",
+              color: isDarkMode ? "#b0b0b0" : "#666666",
+            }}
+          >
+            No recommendations available yet
+          </Text>
+        </View>
       )}
     </View>
   );
