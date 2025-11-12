@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import BottomTabNavigation from "./BottomTabNavigation";
 import { useNavigation } from "./_navigationContext";
 
@@ -56,6 +57,7 @@ interface OutlineItem {
 
 export default function Outline() {
   const { isDarkMode } = useNavigation();
+  const router = useRouter();
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
   const [monthsData, setMonthsData] = useState<
@@ -100,6 +102,13 @@ export default function Outline() {
 
   const toggleMonth = (monthName: string) => {
     setExpandedMonth(expandedMonth === monthName ? null : monthName);
+  };
+
+  const handleCardPress = (item: OutlineItem) => {
+    router.push({
+      pathname: "/Home/ManualDetail",
+      params: { manual: JSON.stringify(item) },
+    });
   };
 
   const filteredMonths = monthsData.map((month) => ({
@@ -195,93 +204,94 @@ export default function Outline() {
                       const imageSize = isSmallScreen ? 80 : 100;
 
                       return (
-                      <TouchableOpacity
-                        key={item._id}
-                        activeOpacity={0.7}
-                        style={[
-                          styles.card,
-                          {
-                            backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-                            borderColor: isDarkMode ? "#ffffff" : "#000000",
-                          },
-                        ]}
-                      >
-                        {/* Image on Left */}
-                        {item.imageUrl && (
-                          <Image
-                            source={{ uri: item.imageUrl }}
-                            style={[
-                              styles.cardImage,
-                              { width: imageSize, height: imageSize },
-                            ]}
-                          />
-                        )}
-
-                        {/* Content on Right */}
-                        <View style={{ flex: 1, marginLeft: 12 }}>
-                          {/* Title */}
-                          <Text
-                            numberOfLines={3}
-                            style={[
-                              styles.cardTitle,
-                              {
-                                color: isDarkMode ? "#ffffff" : "#000000",
-                                fontSize: titleSize,
-                              },
-                            ]}
-                          >
-                            {item.title}
-                          </Text>
-
-                          {/* Scripture References */}
-                          {item.text && (
-                            <Text
-                              numberOfLines={1}
+                        <TouchableOpacity
+                          key={item._id}
+                          activeOpacity={0.7}
+                          onPress={() => handleCardPress(item)}
+                          style={[
+                            styles.card,
+                            {
+                              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+                              borderColor: isDarkMode ? "#ffffff" : "#000000",
+                            },
+                          ]}
+                        >
+                          {/* Image on Left */}
+                          {item.imageUrl && (
+                            <Image
+                              source={{ uri: item.imageUrl }}
                               style={[
-                                styles.scriptureRef,
+                                styles.cardImage,
+                                { width: imageSize, height: imageSize },
+                              ]}
+                            />
+                          )}
+
+                          {/* Content on Right */}
+                          <View style={{ flex: 1, marginLeft: 12 }}>
+                            {/* Title */}
+                            <Text
+                              numberOfLines={3}
+                              style={[
+                                styles.cardTitle,
                                 {
-                                  color: isDarkMode ? "#b0b0b0" : "#000000",
-                                  fontSize: textSize,
+                                  color: isDarkMode ? "#ffffff" : "#000000",
+                                  fontSize: titleSize,
                                 },
                               ]}
                             >
-                              {item.text}
+                              {item.title}
                             </Text>
-                          )}
 
-                          {/* Theme Badge and Date Row */}
-                          <View style={styles.themeDateRowCard}>
-                            {item.theme && (
-                              <View style={styles.themeBadgeCard}>
-                                <Text 
-                                  numberOfLines={1}
-                                  style={[
-                                    styles.themeBadgeTextCard,
-                                    { fontSize: badgeTextSize },
-                                  ]}
-                                >
-                                  {item.theme}
-                                </Text>
-                              </View>
-                            )}
-                            {item.date && (
+                            {/* Scripture References */}
+                            {item.text && (
                               <Text
                                 numberOfLines={1}
                                 style={[
-                                  styles.dateTextCard,
+                                  styles.scriptureRef,
                                   {
                                     color: isDarkMode ? "#b0b0b0" : "#000000",
-                                    fontSize: badgeTextSize,
+                                    fontSize: textSize,
                                   },
                                 ]}
                               >
-                                {item.date}
+                                {item.text}
                               </Text>
                             )}
+
+                            {/* Theme Badge and Date Row */}
+                            <View style={styles.themeDateRowCard}>
+                              {item.theme && (
+                                <View style={styles.themeBadgeCard}>
+                                  <Text
+                                    numberOfLines={1}
+                                    style={[
+                                      styles.themeBadgeTextCard,
+                                      { fontSize: badgeTextSize },
+                                    ]}
+                                  >
+                                    {item.theme}
+                                  </Text>
+                                </View>
+                              )}
+                              {item.date && (
+                                <Text
+                                  numberOfLines={1}
+                                  style={[
+                                    styles.dateTextCard,
+                                    {
+                                      color: isDarkMode ? "#b0b0b0" : "#000000",
+                                      fontSize: badgeTextSize,
+                                    },
+                                  ]}
+                                >
+                                  {item.date}
+                                </Text>
+                              )}
+                            </View>
                           </View>
-                        </View>
-                      </TouchableOpacity>
-                    );
+                        </TouchableOpacity>
+                      );
                     })
                   ) : (
                     <View style={styles.emptyContainer}>
