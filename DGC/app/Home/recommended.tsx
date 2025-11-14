@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-const API_BASE_URL = "http://192.168.56.2:5000";
+const API_BASE_URL = "https://dgc-backend.onrender.com";
 
 interface RecommendedItem {
   _id: string;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { useRouter } from "expo-router";
 import BottomTabNavigation from "./BottomTabNavigation";
 import { useNavigation } from "./_navigationContext";
 
-const API_BASE_URL = "http://192.168.56.2:5000";
+const API_BASE_URL = "https://dgc-backend.onrender.com";
 
 const months = [
   "January",
@@ -70,10 +70,15 @@ export default function Outline() {
     fetchAllMonths();
   }, []);
 
-  const fetchAllMonths = async () => {
+  const fetchAllMonths = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/manuals/all`);
+      const response = await fetch(`${API_BASE_URL}/api/manuals/all`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -98,25 +103,32 @@ export default function Outline() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const toggleMonth = (monthName: string) => {
-    setExpandedMonth(expandedMonth === monthName ? null : monthName);
-  };
+  const toggleMonth = useCallback((monthName: string) => {
+    setExpandedMonth((prev) => (prev === monthName ? null : monthName));
+  }, []);
 
-  const handleCardPress = (item: OutlineItem) => {
-    router.push({
-      pathname: "/Home/ManualDetail",
-      params: { manual: JSON.stringify(item) },
-    });
-  };
+  const handleCardPress = useCallback(
+    (item: OutlineItem) => {
+      router.push({
+        pathname: "/Home/ManualDetail",
+        params: { manual: JSON.stringify(item) },
+      });
+    },
+    [router]
+  );
 
-  const filteredMonths = monthsData.map((month) => ({
-    ...month,
-    data: month.data.filter((item) =>
-      item.title.toLowerCase().includes(searchText.toLowerCase())
-    ),
-  }));
+  const filteredMonths = useMemo(
+    () =>
+      monthsData.map((month) => ({
+        ...month,
+        data: month.data.filter((item) =>
+          item.title.toLowerCase().includes(searchText.toLowerCase())
+        ),
+      })),
+    [monthsData, searchText]
+  );
 
   if (loading) {
     return (
@@ -149,7 +161,11 @@ export default function Outline() {
         { backgroundColor: isDarkMode ? "#000000" : "#FFF" },
       ]}
     >
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        removeClippedSubviews={true}
+      >
         <Text style={[styles.subtitle, { color: isDarkMode ? "#FFF" : "#000" }]}>
           Outlines
         </Text>
@@ -180,6 +196,7 @@ export default function Outline() {
               <TouchableOpacity
                 style={styles.monthButton}
                 onPress={() => toggleMonth(month.name)}
+                activeOpacity={0.7}
               >
                 <Text style={styles.monthButtonText}>{month.name}</Text>
                 <MaterialIcons
@@ -196,7 +213,6 @@ export default function Outline() {
                 <View style={styles.cardsContainer}>
                   {month.data.length > 0 ? (
                     month.data.map((item) => {
-                      // Responsive sizing for smaller screens
                       const isSmallScreen = width < 380;
                       const titleSize = isSmallScreen ? 14 : 16;
                       const textSize = isSmallScreen ? 11 : 13;
@@ -216,7 +232,6 @@ export default function Outline() {
                             },
                           ]}
                         >
-                          {/* Image on Left */}
                           {item.imageUrl && (
                             <Image
                               source={{ uri: item.imageUrl }}
@@ -227,9 +242,7 @@ export default function Outline() {
                             />
                           )}
 
-                          {/* Content on Right */}
                           <View style={{ flex: 1, marginLeft: 12 }}>
-                            {/* Title */}
                             <Text
                               numberOfLines={3}
                               style={[
@@ -243,7 +256,6 @@ export default function Outline() {
                               {item.title}
                             </Text>
 
-                            {/* Scripture References */}
                             {item.text && (
                               <Text
                                 numberOfLines={1}
@@ -259,7 +271,6 @@ export default function Outline() {
                               </Text>
                             )}
 
-                            {/* Theme Badge and Date Row */}
                             <View style={styles.themeDateRowCard}>
                               {item.theme && (
                                 <View style={styles.themeBadgeCard}>
@@ -373,7 +384,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     padding: 16,
-    borderWidth: 2,
+    borderWidth: 0.5,
     borderRadius: 16,
     marginBottom: 16,
     backgroundColor: "#1a1a1a",
