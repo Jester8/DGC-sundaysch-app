@@ -20,6 +20,14 @@ interface NoteItem {
   date: string;
 }
 
+interface TextSegment {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  color?: string;
+}
+
 export default function Notepad() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -32,11 +40,22 @@ export default function Notepad() {
   const [noteId, setNoteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [showFormatMenu, setShowFormatMenu] = useState(false);
+  const [textSegments, setTextSegments] = useState<TextSegment[]>([]);
+  const [selectedRange, setSelectedRange] = useState<{ start: number; end: number } | null>(null);
 
   const getResponsiveSize = (baseSize: number) => {
     const scale = width / 375;
     return Math.max(baseSize * scale, baseSize * 0.8);
   };
+
+  const isTablet = width > 600;
+  const isPhone = width <= 600;
+
+  const getHeaderIconSize = () => isPhone ? 20 : getResponsiveSize(14);
+  const getHeaderTextSize = () => isPhone ? 16 : getResponsiveSize(10);
+  const getTitleInputSize = () => isPhone ? 14 : getResponsiveSize(10);
+  const getContentInputSize = () => isPhone ? 12 : getResponsiveSize(12);
 
   useEffect(() => {
     if (params?.noteId && params.noteId !== "null") {
@@ -147,26 +166,104 @@ export default function Notepad() {
     );
   };
 
-  const insertText = (textToInsert: string) => {
+  const handleBulletList = () => {
     const before = content.substring(0, cursorPosition);
     const after = content.substring(cursorPosition);
-    const newContent = before + textToInsert + after;
+    const newContent = before + "• " + after;
     setContent(newContent);
     autoSaveNote(title, newContent);
-    setCursorPosition(cursorPosition + textToInsert.length);
+    setCursorPosition(cursorPosition + 2);
   };
 
-  const handleBulletList = () => {
-    insertText("• ");
+  const handleNumberedListClick = () => {
+    setShowFormatMenu(true);
   };
 
-  const handleNumberedList = () => {
+  const applyNumberedList = () => {
     const lineNumber = (content.substring(0, cursorPosition).match(/\n/g) || []).length + 1;
-    insertText(`${lineNumber}. `);
+    const before = content.substring(0, cursorPosition);
+    const after = content.substring(cursorPosition);
+    const newContent = before + `${lineNumber}. ` + after;
+    setContent(newContent);
+    autoSaveNote(title, newContent);
+    setCursorPosition(cursorPosition + `${lineNumber}. `.length);
+    setShowFormatMenu(false);
   };
 
-  const handleAddUser = () => {
-    insertText("@user ");
+  const applyBold = () => {
+    const selectedText = content.substring(selectedRange?.start || cursorPosition, selectedRange?.end || cursorPosition);
+    if (selectedText.length === 0) {
+      const before = content.substring(0, cursorPosition);
+      const after = content.substring(cursorPosition);
+      const newContent = before + "**bold text**" + after;
+      setContent(newContent);
+      autoSaveNote(title, newContent);
+    } else {
+      const before = content.substring(0, selectedRange!.start);
+      const after = content.substring(selectedRange!.end);
+      const newContent = before + "**" + selectedText + "**" + after;
+      setContent(newContent);
+      autoSaveNote(title, newContent);
+    }
+    setShowFormatMenu(false);
+    setSelectedRange(null);
+  };
+
+  const applyItalic = () => {
+    const selectedText = content.substring(selectedRange?.start || cursorPosition, selectedRange?.end || cursorPosition);
+    if (selectedText.length === 0) {
+      const before = content.substring(0, cursorPosition);
+      const after = content.substring(cursorPosition);
+      const newContent = before + "*italic text*" + after;
+      setContent(newContent);
+      autoSaveNote(title, newContent);
+    } else {
+      const before = content.substring(0, selectedRange!.start);
+      const after = content.substring(selectedRange!.end);
+      const newContent = before + "*" + selectedText + "*" + after;
+      setContent(newContent);
+      autoSaveNote(title, newContent);
+    }
+    setShowFormatMenu(false);
+    setSelectedRange(null);
+  };
+
+  const applyUnderline = () => {
+    const selectedText = content.substring(selectedRange?.start || cursorPosition, selectedRange?.end || cursorPosition);
+    if (selectedText.length === 0) {
+      const before = content.substring(0, cursorPosition);
+      const after = content.substring(cursorPosition);
+      const newContent = before + "__underlined text__" + after;
+      setContent(newContent);
+      autoSaveNote(title, newContent);
+    } else {
+      const before = content.substring(0, selectedRange!.start);
+      const after = content.substring(selectedRange!.end);
+      const newContent = before + "__" + selectedText + "__" + after;
+      setContent(newContent);
+      autoSaveNote(title, newContent);
+    }
+    setShowFormatMenu(false);
+    setSelectedRange(null);
+  };
+
+  const applyColor = (color: string) => {
+    const selectedText = content.substring(selectedRange?.start || cursorPosition, selectedRange?.end || cursorPosition);
+    if (selectedText.length === 0) {
+      const before = content.substring(0, cursorPosition);
+      const after = content.substring(cursorPosition);
+      const newContent = before + `<color="${color}">colored text</color>` + after;
+      setContent(newContent);
+      autoSaveNote(title, newContent);
+    } else {
+      const before = content.substring(0, selectedRange!.start);
+      const after = content.substring(selectedRange!.end);
+      const newContent = before + `<color="${color}">` + selectedText + `</color>` + after;
+      setContent(newContent);
+      autoSaveNote(title, newContent);
+    }
+    setShowFormatMenu(false);
+    setSelectedRange(null);
   };
 
   return (
@@ -176,7 +273,7 @@ export default function Notepad() {
         backgroundColor: isDarkMode ? "#000000" : "#ffffff",
       }}
     >
-      {/* Header - Moved down with more padding */}
+      {/* Header - Centered */}
       <View
         style={{
           flexDirection: "row",
@@ -191,28 +288,24 @@ export default function Notepad() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons
             name="arrow-back"
-            size={getResponsiveSize(24)}
+            size={getHeaderIconSize()}
             color={isDarkMode ? "#ffffff" : "#000000"}
           />
         </TouchableOpacity>
 
         <Text
           style={{
-            fontSize: getResponsiveSize(16),
+            fontSize: getHeaderTextSize(),
             fontFamily: "Poppins_600SemiBold",
             color: isDarkMode ? "#ffffff" : "#000000",
+            flex: 1,
+            textAlign: "center",
           }}
         >
           NOTE
         </Text>
 
-        <TouchableOpacity onPress={handleDeleteNote} disabled={!noteId}>
-          <MaterialIcons
-            name="delete"
-            size={getResponsiveSize(24)}
-            color={noteId ? (isDarkMode ? "#ff4444" : "#cc0000") : (isDarkMode ? "#666666" : "#cccccc")}
-          />
-        </TouchableOpacity>
+        <View style={{ width: getResponsiveSize(24) }} />
       </View>
 
       {loading ? (
@@ -247,7 +340,7 @@ export default function Notepad() {
             value={title}
             onChangeText={handleTitleChange}
             style={{
-              fontSize: getResponsiveSize(20),
+              fontSize: getTitleInputSize(),
               fontFamily: "Poppins_600SemiBold",
               color: isDarkMode ? "#ffffff" : "#000000",
               marginBottom: getResponsiveSize(24),
@@ -262,15 +355,21 @@ export default function Notepad() {
             placeholderTextColor={isDarkMode ? "#666666" : "#999999"}
             value={content}
             onChangeText={handleContentChange}
-            onSelectionChange={(e) => setCursorPosition(e.nativeEvent.selection.start)}
+            onSelectionChange={(e) => {
+              setCursorPosition(e.nativeEvent.selection.start);
+              setSelectedRange({
+                start: e.nativeEvent.selection.start,
+                end: e.nativeEvent.selection.end,
+              });
+            }}
             multiline
             style={{
-              fontSize: getResponsiveSize(14),
+              fontSize: getContentInputSize(),
               fontFamily: "Poppins_400Regular",
               color: isDarkMode ? "#ffffff" : "#000000",
               minHeight: 300,
               textAlignVertical: "top",
-              lineHeight: getResponsiveSize(22),
+              lineHeight: getResponsiveSize(20),
             }}
           />
 
@@ -285,10 +384,10 @@ export default function Notepad() {
           borderTopColor: isDarkMode ? "#333333" : "#e0e0e0",
           backgroundColor: isDarkMode ? "#1a1a1a" : "#f9f9f9",
           paddingVertical: getResponsiveSize(12),
-          paddingHorizontal: getResponsiveSize(16),
+          paddingHorizontal: getResponsiveSize(12),
         }}
       >
-        {/* Formatting Options Row 1 */}
+        {/* Formatting Options Row */}
         <View
           style={{
             flexDirection: "row",
@@ -309,23 +408,23 @@ export default function Notepad() {
             <MaterialIcons
               name="format-list-bulleted"
               size={getResponsiveSize(24)}
-              color={isDarkMode ? "#ccb300" : "#cc9900"}
+              color={isDarkMode ? "#9d00d4" : "#9d00d4"}
             />
           </TouchableOpacity>
 
-          {/* Numbered List */}
+          {/* Numbered List with Format Menu */}
           <TouchableOpacity
             style={{
               alignItems: "center",
               paddingHorizontal: getResponsiveSize(12),
               paddingVertical: getResponsiveSize(8),
             }}
-            onPress={handleNumberedList}
+            onPress={handleNumberedListClick}
           >
             <MaterialIcons
               name="format-list-numbered"
               size={getResponsiveSize(24)}
-              color={isDarkMode ? "#ccb300" : "#cc9900"}
+              color={isDarkMode ? "#9d00d4" : "#9d00d4"}
             />
           </TouchableOpacity>
 
@@ -341,23 +440,7 @@ export default function Notepad() {
             <MaterialIcons
               name="photo-camera"
               size={getResponsiveSize(24)}
-              color={isDarkMode ? "#ccb300" : "#cc9900"}
-            />
-          </TouchableOpacity>
-
-          {/* User/Mention */}
-          <TouchableOpacity
-            style={{
-              alignItems: "center",
-              paddingHorizontal: getResponsiveSize(12),
-              paddingVertical: getResponsiveSize(8),
-            }}
-            onPress={handleAddUser}
-          >
-            <MaterialIcons
-              name="person"
-              size={getResponsiveSize(24)}
-              color={isDarkMode ? "#ccb300" : "#cc9900"}
+              color={isDarkMode ? "#9d00d4" : "#9d00d4"}
             />
           </TouchableOpacity>
 
@@ -373,11 +456,232 @@ export default function Notepad() {
             <MaterialIcons
               name="image"
               size={getResponsiveSize(24)}
-              color={isDarkMode ? "#ccb300" : "#cc9900"}
+              color={isDarkMode ? "#9d00d4" : "#9d00d4"}
             />
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Format Menu Modal */}
+      {showFormatMenu && (
+        <View
+          style={{
+            position: "absolute",
+            bottom: getResponsiveSize(100),
+            left: 0,
+            right: 0,
+            backgroundColor: isDarkMode ? "#2a2a2a" : "#f0f0f0",
+            borderTopWidth: 1,
+            borderTopColor: isDarkMode ? "#444" : "#ddd",
+            paddingVertical: getResponsiveSize(16),
+            paddingHorizontal: getResponsiveSize(16),
+          }}
+        >
+          {/* Numbered List Option */}
+          <TouchableOpacity
+            style={{
+              paddingVertical: getResponsiveSize(12),
+              paddingHorizontal: getResponsiveSize(12),
+              marginBottom: getResponsiveSize(8),
+              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+              borderRadius: 8,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+            onPress={applyNumberedList}
+          >
+            <MaterialIcons
+              name="format-list-numbered"
+              size={getResponsiveSize(20)}
+              color={isDarkMode ? "#9d00d4" : "#9d00d4"}
+              style={{ marginRight: getResponsiveSize(12) }}
+            />
+            <Text
+              style={{
+                color: isDarkMode ? "#ffffff" : "#000000",
+                fontSize: getResponsiveSize(9),
+                fontFamily: "Poppins_400Regular",
+              }}
+            >
+              Add Numbered List
+            </Text>
+          </TouchableOpacity>
+
+          {/* Bold Option */}
+          <TouchableOpacity
+            style={{
+              paddingVertical: getResponsiveSize(12),
+              paddingHorizontal: getResponsiveSize(12),
+              marginBottom: getResponsiveSize(8),
+              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+              borderRadius: 8,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+            onPress={applyBold}
+          >
+            <Text
+              style={{
+                color: isDarkMode ? "#9d00d4" : "#9d00d4",
+                fontSize: getResponsiveSize(14),
+                fontWeight: "bold",
+                marginRight: getResponsiveSize(12),
+              }}
+            >
+              B
+            </Text>
+            <Text
+              style={{
+                color: isDarkMode ? "#ffffff" : "#000000",
+                fontSize: getResponsiveSize(9),
+                fontFamily: "Poppins_400Regular",
+              }}
+            >
+              Bold
+            </Text>
+          </TouchableOpacity>
+
+          {/* Italic Option */}
+          <TouchableOpacity
+            style={{
+              paddingVertical: getResponsiveSize(12),
+              paddingHorizontal: getResponsiveSize(12),
+              marginBottom: getResponsiveSize(8),
+              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+              borderRadius: 8,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+            onPress={applyItalic}
+          >
+            <Text
+              style={{
+                color: isDarkMode ? "#9d00d4" : "#9d00d4",
+                fontSize: getResponsiveSize(14),
+                fontStyle: "italic",
+                marginRight: getResponsiveSize(12),
+              }}
+            >
+              I
+            </Text>
+            <Text
+              style={{
+                color: isDarkMode ? "#ffffff" : "#000000",
+                fontSize: getResponsiveSize(9),
+                fontFamily: "Poppins_400Regular",
+              }}
+            >
+              Italic
+            </Text>
+          </TouchableOpacity>
+
+          {/* Underline Option */}
+          <TouchableOpacity
+            style={{
+              paddingVertical: getResponsiveSize(12),
+              paddingHorizontal: getResponsiveSize(12),
+              marginBottom: getResponsiveSize(8),
+              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+              borderRadius: 8,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+            onPress={applyUnderline}
+          >
+            <Text
+              style={{
+                color: isDarkMode ? "#9d00d4" : "#9d00d4",
+                fontSize: getResponsiveSize(14),
+                textDecorationLine: "underline",
+                marginRight: getResponsiveSize(12),
+              }}
+            >
+              U
+            </Text>
+            <Text
+              style={{
+                color: isDarkMode ? "#ffffff" : "#000000",
+                fontSize: getResponsiveSize(9),
+                fontFamily: "Poppins_400Regular",
+              }}
+            >
+              Underline
+            </Text>
+          </TouchableOpacity>
+
+          {/* Color Options */}
+          <Text
+            style={{
+              color: isDarkMode ? "#ffffff" : "#000000",
+              fontSize: getResponsiveSize(9),
+              fontFamily: "Poppins_600SemiBold",
+              marginBottom: getResponsiveSize(8),
+              marginTop: getResponsiveSize(4),
+            }}
+          >
+            Color
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-around",
+              marginBottom: getResponsiveSize(8),
+            }}
+          >
+            {["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F"].map((color) => (
+              <TouchableOpacity
+                key={color}
+                style={{
+                  width: getResponsiveSize(32),
+                  height: getResponsiveSize(32),
+                  borderRadius: 16,
+                  backgroundColor: color,
+                  borderWidth: 2,
+                  borderColor: isDarkMode ? "#444" : "#ddd",
+                }}
+                onPress={() => applyColor(color)}
+              />
+            ))}
+          </View>
+
+          {/* Close Button */}
+          <TouchableOpacity
+            style={{
+              paddingVertical: getResponsiveSize(12),
+              paddingHorizontal: getResponsiveSize(12),
+              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+              borderRadius: 8,
+              alignItems: "center",
+            }}
+            onPress={() => setShowFormatMenu(false)}
+          >
+            <Text
+              style={{
+                color: isDarkMode ? "#ffffff" : "#000000",
+                fontSize: getResponsiveSize(9),
+                fontFamily: "Poppins_400Regular",
+              }}
+            >
+              Close
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Overlay to close menu */}
+      {showFormatMenu && (
+        <TouchableOpacity
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+          onPress={() => setShowFormatMenu(false)}
+          activeOpacity={1}
+        />
+      )}
     </View>
   );
 }

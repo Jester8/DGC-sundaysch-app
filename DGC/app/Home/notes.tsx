@@ -58,12 +58,14 @@ export default function Note() {
     return Math.max(baseSize * scale, baseSize * 0.8);
   };
 
+  const isPhone = width <= 600;
+
   const containerPadding = getResponsiveSize(12);
   const cardSpacing = getResponsiveSize(16);
   const cardWidth = (width - containerPadding * 5 - cardSpacing) / 2;
-  const headerFontSize = getResponsiveSize(10);
+  const headerFontSize = isPhone ? 14 : getResponsiveSize(11);
   const headerMarginRight = getResponsiveSize(10);
-  const seeAllFontSize = getResponsiveSize(10);
+  const seeAllFontSize = isPhone ? 14 : getResponsiveSize(10);
   const cardTitleFontSize = getResponsiveSize(10);
 
   const handleAddNote = () => {
@@ -181,7 +183,7 @@ export default function Note() {
           height: cardWidth * 0.6,
           backgroundColor: "transparent",
           borderRadius: getResponsiveSize(16),
-          borderWidth: 1.5,
+          borderWidth: 1,
           borderColor: isDarkMode ? "#333333" : "#000000",
           padding: getResponsiveSize(16),
           justifyContent: "center",
@@ -263,7 +265,6 @@ export default function Note() {
                 fontFamily: "Poppins_600SemiBold",
                 color: isDarkMode ? "#ffffff" : "#000000",
                 marginRight: headerMarginRight,
-            
               }}
             >
               See all 

@@ -70,29 +70,19 @@ export default function Noted() {
     });
   };
 
-  const handleDeleteNote = (noteId: string) => {
-    Alert.alert("Delete Note", "Are you sure you want to delete this note?", [
-      { text: "Cancel", onPress: () => {}, style: "cancel" },
-      {
-        text: "Delete",
-        onPress: async () => {
-          try {
-            const updatedNotes = notes.filter((note) => note.id !== noteId);
-            await AsyncStorage.setItem("notes", JSON.stringify(updatedNotes));
-            setNotes(updatedNotes);
-            Alert.alert("Success", "Note deleted");
-          } catch (error) {
-            Alert.alert("Error", "Failed to delete note");
-          }
-        },
-        style: "destructive",
-      },
-    ]);
-  };
-
   const filteredNotes = notes.filter((note) =>
     note.title.toLowerCase().includes(searchText.toLowerCase())
   );
+
+  // Responsive font sizes
+  const getResponsiveFontSize = (baseSize: number) => {
+    return isTablet ? baseSize * 0.8 : baseSize * 0.9;
+  };
+
+  // Responsive icon sizes
+  const getResponsiveIconSize = (baseSize: number) => {
+    return isTablet ? baseSize * 0.7 : baseSize;
+  };
 
   return (
     <SafeAreaView
@@ -102,7 +92,13 @@ export default function Noted() {
       ]}
     >
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={[styles.subtitle, { color: isDarkMode ? "#FFF" : "#000" }]}>
+        <Text style={[
+          styles.subtitle, 
+          { 
+            color: isDarkMode ? "#FFF" : "#000",
+            fontSize: getResponsiveFontSize(24)
+          }
+        ]}>
           Notes
         </Text>
 
@@ -117,11 +113,17 @@ export default function Noted() {
         >
           <Feather
             name="search"
-            size={18}
+            size={getResponsiveIconSize(16)}
             color={isDarkMode ? "#666" : "#999"}
           />
           <TextInput
-            style={[styles.searchInput, { color: isDarkMode ? "#FFF" : "#000" }]}
+            style={[
+              styles.searchInput, 
+              { 
+                color: isDarkMode ? "#FFF" : "#000",
+                fontSize: getResponsiveFontSize(12)
+              }
+            ]}
             placeholder="Search"
             placeholderTextColor={isDarkMode ? "#666" : "#999"}
             value={searchText}
@@ -132,38 +134,34 @@ export default function Noted() {
         {/* Notes List or Empty State */}
         {loading ? (
           <View style={styles.centerContainer}>
-            <Text style={{ color: isDarkMode ? "#FFF" : "#000" }}>
+            <Text style={{ 
+              color: isDarkMode ? "#FFF" : "#000",
+              fontSize: getResponsiveFontSize(12)
+            }}>
               Loading notes...
             </Text>
           </View>
         ) : filteredNotes.length > 0 ? (
           <View style={styles.notesGrid}>
             {filteredNotes.map((note) => (
-              <View key={note.id} style={styles.noteCardContainer}>
-                <TouchableOpacity
-                  style={styles.noteCard}
-                  onPress={() => handleNotePress(note.id)}
-                >
-                  <Text style={styles.noteTitle} numberOfLines={3}>
-                    {note.title || "Untitled Note"}
-                  </Text>
-                  <Text style={styles.noteDate} numberOfLines={2}>
-                    {note.date}
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Delete Button */}
-                <TouchableOpacity
-                  onPress={() => handleDeleteNote(note.id)}
-                  style={styles.deleteButton}
-                >
-                  <MaterialIcons
-                    name="delete"
-                    size={16}
-                    color={isDarkMode ? "#ffffff" : "#000000"}
-                  />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                key={note.id}
+                style={styles.noteCard}
+                onPress={() => handleNotePress(note.id)}
+              >
+                <Text style={[
+                  styles.noteTitle, 
+                  { fontSize: getResponsiveFontSize(12) }
+                ]} numberOfLines={3}>
+                  {note.title || "Untitled Note"}
+                </Text>
+                <Text style={[
+                  styles.noteDate, 
+                  { fontSize: getResponsiveFontSize(10) }
+                ]} numberOfLines={2}>
+                  {note.date}
+                </Text>
+              </TouchableOpacity>
             ))}
           </View>
         ) : (
@@ -171,13 +169,16 @@ export default function Noted() {
             <View style={styles.emptyStateContent}>
               <MaterialIcons
                 name="note"
-                size={64}
+                size={getResponsiveIconSize(48)}
                 color={isDarkMode ? "#666" : "#ccc"}
               />
               <Text
                 style={[
                   styles.emptyStateTitle,
-                  { color: isDarkMode ? "#FFF" : "#000" },
+                  { 
+                    color: isDarkMode ? "#FFF" : "#000",
+                    fontSize: getResponsiveFontSize(16)
+                  },
                 ]}
               >
                 No Notes Yet
@@ -185,7 +186,10 @@ export default function Noted() {
               <Text
                 style={[
                   styles.emptyStateSubtitle,
-                  { color: isDarkMode ? "#999" : "#666" },
+                  { 
+                    color: isDarkMode ? "#999" : "#666",
+                    fontSize: getResponsiveFontSize(12)
+                  },
                 ]}
               >
                 Create your first note 
@@ -203,7 +207,7 @@ export default function Noted() {
         ]}
         onPress={handleAddNote}
       >
-        <Feather name="plus" size={28} color={isDarkMode ? "#B800E6" : "#FFFFFF"} />
+        <Feather name="plus" size={getResponsiveIconSize(20)} color={isDarkMode ? "#B800E6" : "#FFFFFF"} />
       </TouchableOpacity>
 
       <BottomTabNavigation />
@@ -218,70 +222,55 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   subtitle: {
-    fontSize: 28,
     fontWeight: "700",
     fontStyle: "italic",
-    marginBottom: 24,
+    marginBottom: 20,
     fontFamily: "Poppins_700Bold",
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginBottom: 24,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginBottom: 20,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 12,
-    fontSize: 14,
+    marginLeft: 10,
     fontFamily: "Poppins_400Regular",
   },
   notesGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 10,
     marginBottom: 100,
   },
-  noteCardContainer: {
-    width: "48%",
-    position: "relative",
-  },
   noteCard: {
+    width: "48%",
     backgroundColor: "#B800E6",
-    borderRadius: 12,
-    padding: 16,
-    minHeight: 100,
+    borderRadius: 10,
+    padding: 12,
+    minHeight: 80,
     justifyContent: "space-between",
   },
   noteTitle: {
-    fontSize: 14,
     fontWeight: "600",
     color: "#FFFFFF",
     fontFamily: "Poppins_600SemiBold",
-    lineHeight: 20,
+    lineHeight: 16,
   },
   noteDate: {
-    fontSize: 12,
     color: "#FFFFFF",
     fontFamily: "Poppins_400Regular",
-    marginTop: 12,
-  },
-  deleteButton: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    borderRadius: 16,
-    padding: 6,
+    marginTop: 8,
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    minHeight: 400,
+    minHeight: 300,
     marginBottom: 100,
   },
   emptyStateContent: {
@@ -289,23 +278,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   emptyStateTitle: {
-    fontSize: 20,
     fontWeight: "600",
-    marginTop: 16,
+    marginTop: 12,
     fontFamily: "Poppins_600SemiBold",
   },
   emptyStateSubtitle: {
-    fontSize: 14,
-    marginTop: 8,
+    marginTop: 6,
     textAlign: "center",
     fontFamily: "Poppins_400Regular",
   },
   fab: {
     position: "absolute",
     right: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 10,
     backgroundColor: "#000000",
     alignItems: "center",
     justifyContent: "center",

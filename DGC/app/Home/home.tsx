@@ -23,23 +23,50 @@ interface BannerSlide {
 const bannerSlides: BannerSlide[] = [
   {
     id: "1",
-    image: require("@/assets/images/banner.png"),
+    image: require("@/assets/images/jan4.png"),
   },
   {
     id: "2",
-    image: require("@/assets/images/banner.png"),
+    image: require("@/assets/images/jan11.png"),
   },
   {
     id: "3",
-    image: require("@/assets/images/banner.png"),
+    image: require("@/assets/images/jan18.png"),
+  },
+  {
+    id: "4",
+    image: require("@/assets/images/sign.png"),
   },
 ];
+
+const BannerSkeleton = ({ width, height, isDarkMode, getResponsiveSize }: any) => (
+  <View
+    style={{
+      width: width - getResponsiveSize(32),
+      height: height,
+      borderRadius: getResponsiveSize(16),
+      overflow: "hidden",
+      marginHorizontal: getResponsiveSize(16),
+      backgroundColor: isDarkMode ? "#1a1a1a" : "#f0f0f0",
+    }}
+  >
+    <View
+      style={{
+        width: "100%",
+        height: "100%",
+        backgroundColor: isDarkMode ? "#2a2a2a" : "#e0e0e0",
+        opacity: 0.6,
+      }}
+    />
+  </View>
+);
 
 export default function Home() {
   const { width, height } = useWindowDimensions();
   const { isDarkMode, setIsDarkMode } = useNavigation();
   const flatListRef = useRef<FlatList>(null);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [bannerLoading, setBannerLoading] = useState(true);
 
   const isLandscape = width > height;
 
@@ -47,6 +74,8 @@ export default function Home() {
     const scale = width / 375;
     return Math.max(baseSize * scale, baseSize * 0.8);
   };
+
+  const bannerHeight = isLandscape ? getResponsiveSize(100) : getResponsiveSize(150);
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -65,12 +94,21 @@ export default function Home() {
     <View
       style={{
         width: width - getResponsiveSize(32),
-        height: isLandscape ? getResponsiveSize(100) : getResponsiveSize(150),
+        height: bannerHeight,
         borderRadius: getResponsiveSize(16),
         overflow: "hidden",
         marginHorizontal: getResponsiveSize(16),
+        position: "relative",
       }}
     >
+      {bannerLoading && (
+        <BannerSkeleton
+          width={width}
+          height={bannerHeight}
+          isDarkMode={isDarkMode}
+          getResponsiveSize={getResponsiveSize}
+        />
+      )}
       <Image
         source={item.image}
         style={{
@@ -78,6 +116,7 @@ export default function Home() {
           height: "100%",
           resizeMode: "cover",
         }}
+        onLoadEnd={() => setBannerLoading(false)}
       />
     </View>
   );

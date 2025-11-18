@@ -33,10 +33,17 @@ export default function ManualDetail() {
   const { width } = useWindowDimensions();
   const { manual } = useLocalSearchParams();
 
+  const getResponsiveSize = (baseSize: number) => {
+    const scale = width / 375;
+    return Math.max(baseSize * scale, baseSize * 0.8);
+  };
+
+  const isPhone = width <= 600;
+
   // Responsive sizing
-  const bannerHeight = width < 380 ? 120 : 150;
-  const titleFontSize = width < 380 ? 18 : 24;
-  const subtitleFontSize = width < 380 ? 12 : 14;
+  const bannerHeight = getResponsiveSize(180);
+  const headerArrowSize = isPhone ? 20 : getResponsiveSize(14);
+  const headerTitleSize = isPhone ? 12 : getResponsiveSize(10);
 
   let manualData: ManualData | null = null;
   try {
@@ -58,7 +65,7 @@ export default function ManualDetail() {
     <SafeAreaView
       style={[
         styles.container,
-        { backgroundColor: isDarkMode ? "#000000" : "#FFF" },
+        { backgroundColor: isDarkMode ? "#000000" : "#FFFFFF" },
       ]}
     >
       {/* Header */}
@@ -66,116 +73,166 @@ export default function ManualDetail() {
         style={[
           styles.header,
           {
-            backgroundColor: isDarkMode ? "#000000" : "#FFF",
-            borderBottomColor: isDarkMode ? "#333" : "#ddd",
+            backgroundColor: isDarkMode ? "#000000" : "#FFFFFF",
+            borderBottomColor: isDarkMode ? "#333333" : "#e0e0e0",
           },
         ]}
       >
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons
             name="arrow-back"
-            size={24}
-            color={isDarkMode ? "#FFF" : "#000"}
+            size={headerArrowSize}
+            color={isDarkMode ? "#FFFFFF" : "#000000"}
           />
         </TouchableOpacity>
         <Text
           style={[
             styles.headerTitle,
-            { color: isDarkMode ? "#FFF" : "#000" },
+            { 
+              color: isDarkMode ? "#FFFFFF" : "#000000",
+              fontSize: headerTitleSize,
+            },
           ]}
         >
           OUTLINE
         </Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: headerArrowSize }} />
       </View>
 
+      {/* Date */}
+      {manualData.date && (
+        <View style={{ paddingHorizontal: getResponsiveSize(16), paddingTop: getResponsiveSize(16), paddingBottom: getResponsiveSize(8) }}>
+          <Text
+            style={{
+              fontSize: isPhone ? 12 : getResponsiveSize(9),
+              fontFamily: "Poppins_400Regular",
+              color: isDarkMode ? "#ffffffff" : "#666666",
+            }}
+          >
+            {manualData.date}
+          </Text>
+        </View>
+      )}
+
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Hero Image Banner - Centered and Responsive */}
+        {/* Hero Image Banner with Title Overlay */}
         {manualData.imageUrl && (
-          <View style={[styles.heroContainer, { height: bannerHeight }]}>
+          <View style={[styles.heroContainer, { height: bannerHeight, marginHorizontal: getResponsiveSize(16), marginTop: getResponsiveSize(8), marginBottom: getResponsiveSize(16) }]}>
             <Image
               source={{ uri: manualData.imageUrl }}
               style={styles.heroImage}
             />
-        
+          
           </View>
         )}
 
-        <View style={[styles.content, { paddingHorizontal: 16 }]}>
-          {/* Theme */}
-          {manualData.theme && (
-            <View style={styles.section}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: isDarkMode ? "#ffffffff" : "#000000ff" },
-                ]}
-              >
-                Theme: {manualData.theme}
-              </Text>
-            </View>
-          )}
-
-          {/* Scripture Text */}
-          {manualData.text && (
-            <View style={styles.section}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: isDarkMode ? "#FFF" : "#000" },
-                ]}
-              >
-                SCRIPTURE TEXT
-              </Text>
-              <Text
-                style={[
-                  styles.sectionText,
-                  { color: isDarkMode ? "#b0b0b0" : "#666666" },
-                ]}
-              >
-                {manualData.text}
-              </Text>
-            </View>
-          )}
-
+        <View style={{ paddingHorizontal: getResponsiveSize(16), paddingBottom: getResponsiveSize(40) }}>
           {/* Memory Verse */}
           {manualData.memoryVerse && (
-            <View style={styles.section}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: isDarkMode ? "#FFF" : "#000" },
-                ]}
+            <View style={{ marginBottom: getResponsiveSize(23) }}>
+              <View
+                style={{
+                  backgroundColor: "#9d00d4",
+                  paddingHorizontal: getResponsiveSize(8),
+                  paddingVertical: getResponsiveSize(4),
+                  borderRadius: getResponsiveSize(4),
+                  alignSelf: "flex-start",
+                  marginBottom: getResponsiveSize(8),
+                }}
               >
-                MEMORY VERSE
-              </Text>
+                <Text
+                  style={{
+                    fontSize: isPhone ? 12 : getResponsiveSize(8),
+                    fontFamily: "Poppins_600SemiBold",
+                    color: "#FFFFFF",
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  Memory Verse:
+                </Text>
+              </View>
               <Text
-                style={[
-                  styles.memoryVerseText,
-                  { color: isDarkMode ? "#b0b0b0" : "#666666" },
-                ]}
+                style={{
+                  fontSize: isPhone ? 12 : getResponsiveSize(9),
+                  fontFamily: "Poppins_400Regular",
+                  color: isDarkMode ? "#b0b0b0" : "#666666",
+                  lineHeight: getResponsiveSize(16),
+                }}
               >
                 "{manualData.memoryVerse}"
               </Text>
             </View>
           )}
 
+          {/* Scripture Reference */}
+          {manualData.text && (
+            <View style={{ marginBottom: getResponsiveSize(20) }}>
+              <View
+                style={{
+                  backgroundColor: "#9d00d4",
+                  paddingHorizontal: getResponsiveSize(8),
+                  paddingVertical: getResponsiveSize(4),
+                  borderRadius: getResponsiveSize(4),
+                  alignSelf: "flex-start",
+                  marginBottom: getResponsiveSize(8),
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: isPhone ? 12 : getResponsiveSize(8),
+                    fontFamily: "Poppins_600SemiBold",
+                    color: "#FFFFFF",
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  Scripture Reference:
+                </Text>
+              </View>
+              <Text
+                style={{
+                  fontSize: isPhone ? 12 : getResponsiveSize(9),
+                  fontFamily: "Poppins_400Regular",
+                  color: isDarkMode ? "#b0b0b0" : "#666666",
+                  lineHeight: getResponsiveSize(16),
+                }}
+              >
+                {manualData.text}
+              </Text>
+            </View>
+          )}
+
           {/* Introduction */}
           {manualData.introduction && (
-            <View style={styles.section}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: isDarkMode ? "#FFF" : "#000" },
-                ]}
+            <View style={{ marginBottom: getResponsiveSize(20) }}>
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? "#9d00d4" : "#9d00d4",
+                  borderRadius: getResponsiveSize(4),
+                  paddingHorizontal: getResponsiveSize(8),
+                  paddingVertical: getResponsiveSize(4),
+                  alignSelf: "flex-start",
+                  marginBottom: getResponsiveSize(8),
+                }}
               >
-                Introduction
-              </Text>
+                <Text
+                  style={{
+                   fontSize: isPhone ? 12 : getResponsiveSize(9),
+                    fontFamily: "Poppins_600SemiBold",
+                    color: isDarkMode ? "#FFFFFF" : "#000000",
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  Introduction
+                </Text>
+              </View>
               <Text
-                style={[
-                  styles.sectionText,
-                  { color: isDarkMode ? "#b0b0b0" : "#666666" },
-                ]}
+                style={{
+                   fontSize: isPhone ? 12 : getResponsiveSize(9),
+                  fontFamily: "Poppins_400Regular",
+                  color: isDarkMode ? "#b0b0b0" : "#666666",
+                  lineHeight: getResponsiveSize(16),
+                }}
               >
                 {manualData.introduction}
               </Text>
@@ -184,41 +241,60 @@ export default function ManualDetail() {
 
           {/* Main Points */}
           {manualData.mainPoints && manualData.mainPoints.length > 0 && (
-            <View style={styles.section}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: isDarkMode ? "#FFF" : "#000" },
-                ]}
+            <View style={{ marginBottom: getResponsiveSize(20) }}>
+              <View
+                style={{
+                  backgroundColor: "#9d00d4",
+                  paddingHorizontal: getResponsiveSize(8),
+                  paddingVertical: getResponsiveSize(4),
+                  borderRadius: getResponsiveSize(4),
+                  alignSelf: "flex-start",
+                  marginBottom: getResponsiveSize(12),
+                }}
               >
-                {manualData.theme}
-              </Text>
+                <Text
+                  style={{
+                   fontSize: isPhone ? 12 : getResponsiveSize(9),
+                    fontFamily: "Poppins_600SemiBold",
+                    color: "#FFFFFF",
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  Sub Topic:
+                </Text>
+              </View>
               {manualData.mainPoints.map((point: MainPoint, index: number) => (
-                <View key={index} style={styles.pointContainer}>
+                <View key={index} style={{ marginBottom: getResponsiveSize(12) }}>
                   <Text
-                    style={[
-                      styles.pointNumber,
-                      { color: isDarkMode ? "#FFF" : "#000" },
-                    ]}
+                    style={{
+                    fontSize: isPhone ? 12 : getResponsiveSize(9),
+                      fontFamily: "Poppins_600SemiBold",
+                      color: isDarkMode ? "#FFFFFF" : "#000000",
+                      marginBottom: getResponsiveSize(4),
+                    }}
                   >
                     {index + 1}. {point.title}
                   </Text>
                   <Text
-                    style={[
-                      styles.pointDescription,
-                      { color: isDarkMode ? "#b0b0b0" : "#666666" },
-                    ]}
+                    style={{
+                     fontSize: isPhone ? 12 : getResponsiveSize(9),
+                      fontFamily: "Poppins_400Regular",
+                      color: isDarkMode ? "#b0b0b0" : "#666666",
+                      lineHeight: getResponsiveSize(16),
+                      marginBottom: getResponsiveSize(4),
+                    }}
                   >
                     {point.description}
                   </Text>
                   {point.references && point.references.length > 0 && (
                     <Text
-                      style={[
-                        styles.pointReferences,
-                        { color: isDarkMode ? "#999" : "#999" },
-                      ]}
+                      style={{
+                         fontSize: isPhone ? 12 : getResponsiveSize(9),
+                        fontFamily: "Poppins_400Regular",
+                        color: isDarkMode ? "#999999" : "#999999",
+                      }}
                     >
-                      {point.references.join(", ")}
+                      ({point.references.join("; ")})
                     </Text>
                   )}
                 </View>
@@ -228,20 +304,35 @@ export default function ManualDetail() {
 
           {/* Class Discussion */}
           {manualData.classDiscussion && (
-            <View style={styles.section}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: isDarkMode ? "#FFF" : "#000" },
-                ]}
+            <View style={{ marginBottom: getResponsiveSize(20) }}>
+              <View
+                style={{
+                  backgroundColor: "#9d00d4",
+                  paddingHorizontal: getResponsiveSize(8),
+                  paddingVertical: getResponsiveSize(4),
+                  borderRadius: getResponsiveSize(4),
+                  alignSelf: "flex-start",
+                  marginBottom: getResponsiveSize(8),
+                }}
               >
-                Class Discussion
-              </Text>
+                <Text
+                  style={{
+                    fontSize: isPhone ? 12 : getResponsiveSize(9),
+                    fontFamily: "Poppins_600SemiBold",
+                    color: "#FFFFFF",
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  Class Discussion
+                </Text>
+              </View>
               <Text
-                style={[
-                  styles.sectionText,
-                  { color: isDarkMode ? "#b0b0b0" : "#666666" },
-                ]}
+                style={{
+                  fontSize: isPhone ? 12 : getResponsiveSize(9),
+                  fontFamily: "Poppins_400Regular",
+                  color: isDarkMode ? "#b0b0b0" : "#666666",
+                  lineHeight: getResponsiveSize(16),
+                }}
               >
                 {manualData.classDiscussion}
               </Text>
@@ -250,20 +341,35 @@ export default function ManualDetail() {
 
           {/* Conclusion */}
           {manualData.conclusion && (
-            <View style={styles.section}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: isDarkMode ? "#FFF" : "#000" },
-                ]}
+            <View style={{ marginBottom: getResponsiveSize(20) }}>
+              <View
+                style={{
+                  backgroundColor: "#9d00d4",
+                  paddingHorizontal: getResponsiveSize(8),
+                  paddingVertical: getResponsiveSize(4),
+                  borderRadius: getResponsiveSize(4),
+                  alignSelf: "flex-start",
+                  marginBottom: getResponsiveSize(8),
+                }}
               >
-                Conclusion
-              </Text>
+                <Text
+                  style={{
+                   fontSize: isPhone ? 12 : getResponsiveSize(9),
+                    fontFamily: "Poppins_600SemiBold",
+                    color: "#FFFFFF",
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  Conclusion
+                </Text>
+              </View>
               <Text
-                style={[
-                  styles.sectionText,
-                  { color: isDarkMode ? "#b0b0b0" : "#666666" },
-                ]}
+                style={{
+              fontSize: isPhone ? 12 : getResponsiveSize(9),
+                  fontFamily: "Poppins_400Regular",
+                  color: isDarkMode ? "#b0b0b0" : "#666666",
+                  lineHeight: getResponsiveSize(16),
+                }}
               >
                 {manualData.conclusion}
               </Text>
@@ -288,17 +394,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    fontFamily: "Poppins_700Bold",
+    fontWeight: "600",
+    fontFamily: "Poppins_600SemiBold",
+    letterSpacing: 1,
   },
   heroContainer: {
     position: "relative",
-    width: "80%",
-    alignSelf: "center",
-    height: 150,
-    marginBottom: 24,
-    marginTop: 16,
     borderRadius: 12,
     overflow: "hidden",
   },
@@ -312,71 +413,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(184, 0, 230, 0.9)",
+    backgroundColor: "rgba(157, 0, 212, 0.95)",
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
   heroTitle: {
-    fontSize: 24,
     fontWeight: "700",
-    color: "#FFF",
+    color: "#FFFFFF",
     fontFamily: "Poppins_700Bold",
     marginBottom: 4,
+    lineHeight: 22,
   },
   heroSubtitle: {
-    fontSize: 14,
     fontWeight: "600",
-    color: "#FFF",
+    color: "#FFFFFF",
     fontFamily: "Poppins_600SemiBold",
     fontStyle: "italic",
-  },
-  content: {
-    paddingBottom: 40,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 12,
-    fontFamily: "Poppins_700Bold",
-    letterSpacing: 0.5,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    fontFamily: "Poppins_700Bold",
-    letterSpacing: 0.5,
-  },
-  sectionText: {
-    fontSize: 14,
-    fontFamily: "Poppins_400Regular",
-    lineHeight: 20,
-  },
-  memoryVerseText: {
-    fontSize: 14,
-    fontFamily: "Poppins_400Regular",
-    fontStyle: "italic",
-    lineHeight: 20,
-  },
-  pointContainer: {
-    marginBottom: 16,
-  },
-  pointNumber: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 6,
-    fontFamily: "Poppins_600SemiBold",
-  },
-  pointDescription: {
-    fontSize: 13,
-    fontFamily: "Poppins_400Regular",
-    lineHeight: 18,
-    marginBottom: 4,
-  },
-  pointReferences: {
-    fontSize: 12,
-    fontFamily: "Poppins_400Regular",
   },
 });

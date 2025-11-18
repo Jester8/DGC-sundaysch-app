@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,18 +7,31 @@ import {
   useWindowDimensions,
   Image,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useNavigation } from "./_navigationContext";
 
 const API_BASE_URL = "https://dgc-backend.onrender.com";
 
-interface RecommendedItem {
+interface ManualItem {
   _id: string;
+  id: string;
   title: string;
   theme: string;
   memoryVerse: string;
   month: string;
   date: string;
   imageUrl?: string;
+  text?: string;
+  introduction?: string;
+  mainPoints?: Array<{
+    title: string;
+    description: string;
+    references: string[];
+  }>;
+  classDiscussion?: string;
+  conclusion?: string;
+  week?: number;
+  order?: number;
 }
 
 interface SkeletonLoaderProps {
@@ -72,58 +85,93 @@ const SkeletonLoader = ({ isDarkMode, itemSize }: SkeletonLoaderProps) => (
 );
 
 interface RecommendedProps {
-  isDarkMode: boolean;
+  isDarkMode?: boolean;
 }
 
-export default function Recommended({ isDarkMode }: RecommendedProps) {
+export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedProps) {
   const { width } = useWindowDimensions();
-  const [loading, setLoading] = useState(true);
-  const [recommendedData, setRecommendedData] = useState<RecommendedItem[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [continueLoading, setContinueLoading] = useState(true);
+  const router = useRouter();
+  const { isDarkMode: contextIsDarkMode } = useNavigation();
+  const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : contextIsDarkMode;
 
-  const isSmallDevice = width < 350;
+  const [loading, setLoading] = useState(true);
+  const [allManuals, setAllManuals] = useState<ManualItem[]>([]);
+  const [recommendedData, setRecommendedData] = useState<ManualItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchRecommended();
-
-    const continueTimer = setTimeout(() => {
-      setContinueLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(continueTimer);
+    fetchAllManualsAndRecommended();
   }, []);
 
-  const fetchRecommended = async () => {
+  const fetchAllManualsAndRecommended = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api/manuals/recommended`);
+      // Fetch all manuals
+      const allResponse = await fetch(`${API_BASE_URL}/api/manuals/all`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!allResponse.ok) {
+        throw new Error(`HTTP error! status: ${allResponse.status}`);
       }
 
-      const data = await response.json();
+      const allData = await allResponse.json();
 
-      if (data.success && data.data) {
-        setRecommendedData(data.data);
-        setLoading(false); 
-      } else {
-        throw new Error("Failed to fetch recommended manuals");
+      if (allData.success && allData.data) {
+        // Flatten all manuals into a single array
+        const flattenedManuals: ManualItem[] = [];
+        Object.values(allData.data).forEach((monthManuals: any) => {
+          if (Array.isArray(monthManuals)) {
+            flattenedManuals.push(...monthManuals);
+          }
+        });
+        setAllManuals(flattenedManuals);
+
+        // Fetch recommended manuals
+        const recResponse = await fetch(
+          `${API_BASE_URL}/api/manuals/recommended`
+        );
+
+        if (!recResponse.ok) {
+          throw new Error(`HTTP error! status: ${recResponse.status}`);
+        }
+
+        const recData = await recResponse.json();
+
+        if (recData.success && recData.data) {
+          // Map recommended manuals with full data from allManuals
+          const recommendedWithFullData = recData.data.map(
+            (recItem: any) => {
+              const fullManual = flattenedManuals.find(
+                (m) => m._id === recItem._id || m.id === recItem.id
+              );
+              return fullManual || recItem;
+            }
+          );
+          setRecommendedData(recommendedWithFullData);
+        } else {
+          setRecommendedData(recData.data || []);
+        }
       }
     } catch (err) {
-      console.error("Error fetching recommended:", err);
+      console.error("Error fetching manuals:", err);
       setError(err instanceof Error ? err.message : "Unknown error occurred");
+    } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const getResponsiveSize = (baseSize: number) => {
     const scale = width / 375;
     return Math.max(baseSize * scale, baseSize * 0.8);
   };
+
+  const isPhone = width <= 600;
 
   const itemSize = {
     width: width - getResponsiveSize(32),
@@ -131,16 +179,31 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
     imageHeight: getResponsiveSize(80),
   };
 
-  const titleFontSize = getResponsiveSize(9);
+  const titleFontSize = getResponsiveSize(10);
   const versesFontSize = getResponsiveSize(9);
   const categoryFontSize = getResponsiveSize(9);
   const dateFontSize = getResponsiveSize(9);
-  const headerFontSize = getResponsiveSize(9);
-  const seeAllFontSize = getResponsiveSize(9);
+  const headerFontSize = isPhone ? 12 : getResponsiveSize(11);
+  const seeAllFontSize = isPhone ? 12 : getResponsiveSize(9);
 
-  const renderRecommendedItem = ({ item }: { item: RecommendedItem }) => (
+  const handleCardPress = useCallback(
+    (item: ManualItem) => {
+      router.push({
+        pathname: "/Home/ManualDetail",
+        params: { manual: JSON.stringify(item) },
+      });
+    },
+    [router]
+  );
+
+  const handleSeeAll = () => {
+    router.push("/Home/outline");
+  };
+
+  const renderRecommendedItem = ({ item }: { item: ManualItem }) => (
     <TouchableOpacity
       activeOpacity={0.7}
+      onPress={() => handleCardPress(item)}
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -250,51 +313,8 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
           marginBottom: getResponsiveSize(12),
         }}
       >
-        Continue Last Read
+        Recommended for You
       </Text>
-
-      {continueLoading ? (
-        <View
-          style={{
-            width: "100%",
-            height: getResponsiveSize(40),
-            backgroundColor: "#9d00d4",
-            borderRadius: getResponsiveSize(16),
-            paddingHorizontal: getResponsiveSize(16),
-            paddingVertical: getResponsiveSize(12),
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: getResponsiveSize(20),
-          }}
-        >
-          <Text
-            style={{
-              fontSize: getResponsiveSize(10),
-              fontFamily: "Poppins_500Medium",
-              color: "#ffffff",
-            }}
-          >
-            Power of Worship
-          </Text>
-          <View
-            style={{
-              width: getResponsiveSize(25),
-              height: getResponsiveSize(25),
-              borderRadius: getResponsiveSize(8),
-              backgroundColor: "rgba(255, 252, 252, 0.94)",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Ionicons
-              name="arrow-forward"
-              size={isSmallDevice ? 16 : 20}
-              color="#8c17c2ff"
-            />
-          </View>
-        </View>
-      ) : null}
 
       <View
         style={{
@@ -311,9 +331,9 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
             color: isDarkMode ? "#ffffff" : "#000000",
           }}
         >
-          Recommended
+          This Week
         </Text>
-        <TouchableOpacity activeOpacity={0.7}>
+        <TouchableOpacity activeOpacity={0.7} onPress={handleSeeAll}>
           <Text
             style={{
               fontSize: seeAllFontSize,
@@ -355,7 +375,7 @@ export default function Recommended({ isDarkMode }: RecommendedProps) {
             {error}
           </Text>
           <TouchableOpacity
-            onPress={fetchRecommended}
+            onPress={fetchAllManualsAndRecommended}
             style={{
               marginTop: getResponsiveSize(12),
               paddingHorizontal: getResponsiveSize(16),

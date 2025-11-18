@@ -143,11 +143,7 @@ export default function Outline() {
             size="large"
             color={isDarkMode ? "#B800E6" : "#B800E6"}
           />
-          <Text
-            style={[styles.loadingText, { color: isDarkMode ? "#FFF" : "#000" }]}
-          >
-            Loading outlines...
-          </Text>
+         
         </View>
         <BottomTabNavigation />
       </SafeAreaView>
@@ -167,7 +163,7 @@ export default function Outline() {
         removeClippedSubviews={true}
       >
         <Text style={[styles.subtitle, { color: isDarkMode ? "#FFF" : "#000" }]}>
-          Outlines
+          Manuals
         </Text>
 
         <View
@@ -312,7 +308,7 @@ export default function Outline() {
                           { color: isDarkMode ? "#999" : "#666" },
                         ]}
                       >
-                        No outlines available yet
+                        No manuals available yet
                       </Text>
                     </View>
                   )}
@@ -344,7 +340,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 2,
+    borderWidth: 1,
     borderRadius: 29,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -383,8 +379,8 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "flex-start",
-    padding: 16,
-    borderWidth: 0.5,
+    padding: 10,
+    borderWidth: 0.3,
     borderRadius: 16,
     marginBottom: 16,
     backgroundColor: "#1a1a1a",

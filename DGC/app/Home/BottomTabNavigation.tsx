@@ -8,22 +8,28 @@ export default function BottomTabNavigation() {
   const router = useRouter();
   const { activeTab, setActiveTab, isDarkMode } = useNavigation();
 
- 
   const isTablet = width > 768;
+  const isMobile = width <= 768;
 
   const getResponsiveSize = (baseSize: number) => {
-    let scale;
-    
     if (isTablet) {
-  
-      scale = width / 800;
-      
-      return Math.max(baseSize * scale * 0.6, baseSize * 0.5);
+    
+      return baseSize * 0.7;
     } else {
      
-      scale = width / 375;
-      return Math.max(baseSize * scale, baseSize * 0.8);
+      return baseSize;
     }
+  };
+
+  const getTabletPadding = (baseValue: number) => {
+    if (isTablet) {
+      return baseValue * 0.6; 
+    }
+    return baseValue;
+  };
+
+  const getActiveBackgroundColor = () => {
+    return isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
   };
 
   const handleMenuPress = (menu: string) => {
@@ -48,8 +54,8 @@ export default function BottomTabNavigation() {
         flexDirection: "row",
         justifyContent: "space-around",
         alignItems: "center",
-        paddingVertical: getResponsiveSize(10),
-        paddingHorizontal: getResponsiveSize(12),
+        paddingVertical: getTabletPadding(getResponsiveSize(10)),
+        paddingHorizontal: getTabletPadding(getResponsiveSize(12)),
         borderTopWidth: 1,
         borderTopColor: isDarkMode ? "#000000ff" : "#f0f0f0",
         backgroundColor: isDarkMode ? "#000000ff" : "#ffffff",
@@ -59,21 +65,23 @@ export default function BottomTabNavigation() {
         onPress={() => handleMenuPress("Home")}
         style={{
           alignItems: "center",
-          paddingVertical: getResponsiveSize(8),
-          paddingHorizontal: getResponsiveSize(16),
+          paddingVertical: getTabletPadding(getResponsiveSize(6)),
+          paddingHorizontal: getTabletPadding(getResponsiveSize(16)),
+          borderRadius: isTablet ? 12 : 8,
+          backgroundColor: activeTab === "Home" ? getActiveBackgroundColor() : "transparent",
         }}
       >
         <Feather
           name="home"
-          size={getResponsiveSize(24)}
-          color={isDarkMode ? "#ffffff" : "#000000"}
+          size={getResponsiveSize(21)}
+          color={activeTab === "Home" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000")}
         />
         <Text
           style={{
-            fontSize: getResponsiveSize(12),
+            fontSize: getResponsiveSize(11),
             fontFamily: "Poppins_500Medium",
-            color: isDarkMode ? "#ffffff" : "#000000",
-            marginTop: getResponsiveSize(4),
+            color: activeTab === "Home" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000"),
+            marginTop: getTabletPadding(getResponsiveSize(4)),
           }}
         >
           Home
@@ -84,24 +92,26 @@ export default function BottomTabNavigation() {
         onPress={() => handleMenuPress("Outlines")}
         style={{
           alignItems: "center",
-          paddingVertical: getResponsiveSize(8),
-          paddingHorizontal: getResponsiveSize(16),
+          paddingVertical: getTabletPadding(getResponsiveSize(8)),
+          paddingHorizontal: getTabletPadding(getResponsiveSize(16)),
+          borderRadius: isTablet ? 12 : 8,
+          backgroundColor: activeTab === "Outlines" ? getActiveBackgroundColor() : "transparent",
         }}
       >
         <MaterialCommunityIcons
           name={activeTab === "Outlines" ? "file-document" : "file-document-outline"}
-          size={getResponsiveSize(24)}
-          color={isDarkMode ? "#ffffff" : "#000000"}
+          size={getResponsiveSize(21)}
+          color={activeTab === "Outlines" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000")}
         />
         <Text
           style={{
-            fontSize: getResponsiveSize(12),
+            fontSize: getResponsiveSize(11),
             fontFamily: "Poppins_500Medium",
-            color: isDarkMode ? "#ffffff" : "#000000",
-            marginTop: getResponsiveSize(4),
+            color: activeTab === "Outlines" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000"),
+            marginTop: getTabletPadding(getResponsiveSize(4)),
           }}
         >
-          Outlines
+          Manuals
         </Text>
       </TouchableOpacity>
 
@@ -109,21 +119,23 @@ export default function BottomTabNavigation() {
         onPress={() => handleMenuPress("noted")}
         style={{
           alignItems: "center",
-          paddingVertical: getResponsiveSize(8),
-          paddingHorizontal: getResponsiveSize(16),
+          paddingVertical: getTabletPadding(getResponsiveSize(8)),
+          paddingHorizontal: getTabletPadding(getResponsiveSize(16)),
+          borderRadius: isTablet ? 12 : 8,
+          backgroundColor: activeTab === "noted" ? getActiveBackgroundColor() : "transparent",
         }}
       >
         <Feather
           name="edit-3"
-          size={getResponsiveSize(24)}
-          color={isDarkMode ? "#ffffff" : "#000000"}
+          size={getResponsiveSize(21)}
+          color={activeTab === "noted" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000")}
         />
         <Text
           style={{
-            fontSize: getResponsiveSize(12),
+            fontSize: getResponsiveSize(11),
             fontFamily: "Poppins_500Medium",
-            color: isDarkMode ? "#ffffff" : "#000000",
-            marginTop: getResponsiveSize(4),
+            color: activeTab === "noted" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000"),
+            marginTop: getTabletPadding(getResponsiveSize(4)),
           }}
         >
           Notes
@@ -134,21 +146,23 @@ export default function BottomTabNavigation() {
         onPress={() => handleMenuPress("Profile")}
         style={{
           alignItems: "center",
-          paddingVertical: getResponsiveSize(8),
-          paddingHorizontal: getResponsiveSize(16),
+          paddingVertical: getTabletPadding(getResponsiveSize(8)),
+          paddingHorizontal: getTabletPadding(getResponsiveSize(16)),
+          borderRadius: isTablet ? 12 : 8,
+          backgroundColor: activeTab === "Profile" ? getActiveBackgroundColor() : "transparent",
         }}
       >
         <Feather
           name="user"
-          size={getResponsiveSize(24)}
-          color={isDarkMode ? "#ffffff" : "#000000"}
+          size={getResponsiveSize(21)}
+          color={activeTab === "Profile" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000")}
         />
         <Text
           style={{
-            fontSize: getResponsiveSize(12),
+            fontSize: getResponsiveSize(11),
             fontFamily: "Poppins_500Medium",
-            color: isDarkMode ? "#ffffff" : "#000000",
-            marginTop: getResponsiveSize(4),
+            color: activeTab === "Profile" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000"),
+            marginTop: getTabletPadding(getResponsiveSize(4)),
           }}
         >
           Profile
