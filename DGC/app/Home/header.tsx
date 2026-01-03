@@ -15,8 +15,8 @@ export default function Header({ isDarkMode, onToggleDarkMode }: HeaderProps) {
   };
 
   // Large, clear logo for visibility
-  const logoSize = getResponsiveSize(70);
-  const iconSize = getResponsiveSize(26);
+  const logoSize = getResponsiveSize(72);
+  const iconSize = getResponsiveSize(20);
 
   return (
     <View

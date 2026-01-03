@@ -11,6 +11,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useRef } from "react";
 import { View, BackHandler, Platform, PanResponder } from "react-native";
 import { NavigationProvider } from "@/app/Home/_navigationContext";
+import "../global.css";
 
 SplashScreen.preventAutoHideAsync();
 

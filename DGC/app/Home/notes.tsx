@@ -23,7 +23,7 @@ interface NoteItem {
 }
 
 export default function Note() {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const router = useRouter();
   const { isDarkMode } = useNavigation();
   const [notesData, setNotesData] = useState<NoteItem[]>([]);
@@ -53,20 +53,94 @@ export default function Note() {
     }, [loadNotes])
   );
 
+  // Improved responsive size calculation
   const getResponsiveSize = (baseSize: number) => {
-    const scale = width / 375;
-    return Math.max(baseSize * scale, baseSize * 0.8);
+    // Base width for mobile (iPhone 375)
+    const baseWidth = 375;
+    
+    // Calculate scale factor
+    let scaleFactor = width / baseWidth;
+    
+    // For tablets, make the scaling less aggressive
+    if (width > 768) { // Tablet
+      // Cap the scale factor for tablets
+      scaleFactor = Math.min(scaleFactor, 1.2);
+      // Make sizes smaller on tablets
+      return baseSize * 0.85 * scaleFactor;
+    } else if (width <= 320) { // Small phones
+      return baseSize * 0.9;
+    }
+    
+    return baseSize * scaleFactor;
   };
 
+  // Better device detection
+  const isSmallPhone = width <= 375;
   const isPhone = width <= 600;
+  const isTablet = width > 768;
+  const isLargeTablet = width > 1024;
 
-  const containerPadding = getResponsiveSize(12);
-  const cardSpacing = getResponsiveSize(16);
-  const cardWidth = (width - containerPadding * 5 - cardSpacing) / 2;
-  const headerFontSize = isPhone ? 14 : getResponsiveSize(11);
-  const headerMarginRight = getResponsiveSize(10);
-  const seeAllFontSize = isPhone ? 14 : getResponsiveSize(10);
-  const cardTitleFontSize = getResponsiveSize(10);
+  // Responsive font sizes - smaller on tablets
+  const getFontSize = (baseSize: number, tabletMultiplier: number = 0.85) => {
+    if (isTablet) {
+      return baseSize * tabletMultiplier;
+    }
+    return baseSize;
+  };
+
+  // Apply responsive sizes
+  const headerFontSize = getFontSize(13, 0.9); // 16px mobile, ~14.4px tablet
+  const seeAllFontSize = getFontSize(14, 0.85); // 14px mobile, ~11.9px tablet
+  const cardTitleFontSize = getFontSize(12, 0.85); // 12px mobile, ~10.2px tablet
+  const dateFontSize = getFontSize(9, 0.85); // 9px mobile, ~7.65px tablet
+  const addNoteFontSize = getFontSize(11, 0.85); // 11px mobile, ~9.35px tablet
+
+  // Responsive padding and spacing
+  const getPadding = () => {
+    if (isTablet) {
+      return getResponsiveSize(20); // Less padding on tablet
+    }
+    return getResponsiveSize(16); // Normal padding on mobile
+  };
+
+  const getSpacing = () => {
+    if (isTablet) {
+      return getResponsiveSize(14); // Less spacing on tablet
+    }
+    return getResponsiveSize(16); // Normal spacing on mobile
+  };
+
+  // Calculate card dimensions based on device
+  const getCardDimensions = () => {
+    const containerPadding = getPadding() * 2;
+    const cardSpacing = getSpacing();
+    
+    if (isTablet) {
+      // For tablets, show more columns if space allows
+      const numColumns = isLargeTablet ? 3 : 2;
+      const totalSpacing = cardSpacing * (numColumns - 1) + containerPadding;
+      const cardWidth = (width - totalSpacing) / numColumns;
+      return {
+        cardWidth,
+        cardHeight: cardWidth * 0.6, // Keep aspect ratio
+        cardSpacing,
+        numColumns,
+      };
+    } else {
+      // For phones, always 2 columns
+      const numColumns = 2;
+      const totalSpacing = cardSpacing * (numColumns - 1) + containerPadding;
+      const cardWidth = (width - totalSpacing) / numColumns;
+      return {
+        cardWidth,
+        cardHeight: cardWidth * 0.6,
+        cardSpacing,
+        numColumns: 2,
+      };
+    }
+  };
+
+  const { cardWidth, cardHeight, cardSpacing, numColumns } = getCardDimensions();
 
   const handleAddNote = () => {
     router.push({
@@ -103,14 +177,15 @@ export default function Note() {
   };
 
   const renderNoteCard = ({ item, index }: { item: NoteItem; index: number }) => {
-    const isLastCard = index === notesData.length - 1;
+    const isLastInRow = (index + 1) % numColumns === 0;
+    const isLastRow = index >= notesData.length - (notesData.length % numColumns);
 
     return (
       <View
         style={{
           width: cardWidth,
-          height: cardWidth * 0.6,
-          marginRight: isLastCard ? 15 : cardSpacing,
+          height: cardHeight,
+          marginRight: isLastInRow ? 0 : cardSpacing,
           marginBottom: cardSpacing,
           position: "relative",
         }}
@@ -121,9 +196,9 @@ export default function Note() {
           style={{
             width: "100%",
             height: "100%",
-            backgroundColor: "#9d00d4",
+            backgroundColor: isDarkMode ? "#242424" : "#f5f5f5",
             borderRadius: getResponsiveSize(16),
-            padding: getResponsiveSize(16),
+            padding: getResponsiveSize(14),
             justifyContent: "flex-end",
           }}
         >
@@ -132,17 +207,18 @@ export default function Note() {
             style={{
               fontSize: cardTitleFontSize,
               fontFamily: "Poppins_600SemiBold",
-              color: "#ffffff",
+              color: isDarkMode ? "#ffffff" : "#000000",
+              lineHeight: cardTitleFontSize * 1.3,
             }}
           >
             {item.title || "Untitled Note"}
           </Text>
           <Text
             style={{
-              fontSize: getResponsiveSize(8),
+              fontSize: dateFontSize,
               fontFamily: "Poppins_400Regular",
-              color: "rgba(255,255,255,0.7)",
-              marginTop: getResponsiveSize(8),
+              color: isDarkMode ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.6)",
+              marginTop: getResponsiveSize(6),
             }}
           >
             {item.date}
@@ -154,17 +230,19 @@ export default function Note() {
           onPress={() => handleDeleteNote(item.id)}
           style={{
             position: "absolute",
-            top: getResponsiveSize(8),
-            right: getResponsiveSize(8),
-            backgroundColor: "rgba(0,0,0,0.6)",
+            top: getResponsiveSize(6),
+            right: getResponsiveSize(6),
+            backgroundColor: isDarkMode ? "rgba(0, 0, 0, 0.6)" : "rgba(255, 255, 255, 0.8)",
             borderRadius: getResponsiveSize(20),
-            padding: getResponsiveSize(6),
+            padding: getResponsiveSize(5),
+            borderWidth: 1,
+            borderColor: isDarkMode ? "#444" : "#ddd",
           }}
         >
           <MaterialIcons
             name="delete"
-            size={getResponsiveSize(10)}
-            color={isDarkMode ? "#ffffff" : "#ffffffff"}
+            size={getResponsiveSize(isTablet ? 12 : 14)}
+            color={isDarkMode ? "#ffffff" : "#ff4444"}
           />
         </TouchableOpacity>
       </View>
@@ -172,7 +250,9 @@ export default function Note() {
   };
 
   const renderAddCard = () => {
-    const isLastCard = notesData.length === 0;
+    const totalItems = notesData.length + 1;
+    const isLastInRow = totalItems % numColumns === 0;
+    const isFullRow = notesData.length % numColumns === 0;
 
     return (
       <TouchableOpacity
@@ -180,15 +260,15 @@ export default function Note() {
         onPress={handleAddNote}
         style={{
           width: cardWidth,
-          height: cardWidth * 0.6,
+          height: cardHeight,
           backgroundColor: "transparent",
           borderRadius: getResponsiveSize(16),
-          borderWidth: 1,
-          borderColor: isDarkMode ? "#333333" : "#000000",
-          padding: getResponsiveSize(16),
+          borderWidth: 0.7,
+          borderColor: isDarkMode ? "#333333" : "#000000ff",
+          padding: getResponsiveSize(14),
           justifyContent: "center",
           alignItems: "center",
-          marginRight: isLastCard ? 0 : cardSpacing,
+          marginRight: isLastInRow ? 0 : cardSpacing,
           marginBottom: cardSpacing,
         }}
       >
@@ -197,29 +277,29 @@ export default function Note() {
             <Image
               source={require("../../assets/images/folder-light.png")}
               style={{
-                width: getResponsiveSize(40),
-                height: getResponsiveSize(40),
+                width: getResponsiveSize(isTablet ? 28 : 32),
+                height: getResponsiveSize(isTablet ? 28 : 32),
               }}
             />
           ) : (
             <Image
               source={folderDarkPng}
               style={{
-                width: getResponsiveSize(40),
-                height: getResponsiveSize(40),
+                width: getResponsiveSize(isTablet ? 28 : 32),
+                height: getResponsiveSize(isTablet ? 28 : 32),
               }}
             />
           )}
           <Text
             style={{
-              fontSize: getResponsiveSize(10),
+              fontSize: addNoteFontSize,
               fontFamily: "Poppins_500Medium",
               color: isDarkMode ? "#b0b0b0" : "#666666",
               marginTop: getResponsiveSize(8),
               textAlign: "center",
             }}
           >
-            Add Your First Note
+            {notesData.length === 0 ? "Add Your First Note" : "Add New Note"}
           </Text>
         </View>
       </TouchableOpacity>
@@ -231,11 +311,10 @@ export default function Note() {
   return (
     <View
       style={{
-        paddingHorizontal: containerPadding,
+        paddingHorizontal: getPadding(),
         paddingVertical: getResponsiveSize(20),
         backgroundColor: isDarkMode ? "#000000" : "#ffffff",
         flex: 1,
-        marginLeft: headerMarginRight,
       }}
     >
       {/* Header */}
@@ -244,8 +323,7 @@ export default function Note() {
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: getResponsiveSize(16),
-          marginLeft: headerMarginRight,
+          marginBottom: getSpacing(),
         }}
       >
         <Text
@@ -253,6 +331,7 @@ export default function Note() {
             fontSize: headerFontSize,
             fontFamily: "Poppins_600SemiBold",
             color: isDarkMode ? "#ffffff" : "#000000",
+            marginLeft: getResponsiveSize(15),
           }}
         >
           Your Notes
@@ -262,12 +341,12 @@ export default function Note() {
             <Text
               style={{
                 fontSize: seeAllFontSize,
-                fontFamily: "Poppins_600SemiBold",
-                color: isDarkMode ? "#ffffff" : "#000000",
-                marginRight: headerMarginRight,
+                fontFamily: "Poppins_500Medium",
+                color: isDarkMode ? "#ffffffff" : "#000000",
+                textDecorationLine: "underline",
               }}
             >
-              See all 
+              See all
             </Text>
           </TouchableOpacity>
         )}
@@ -275,15 +354,17 @@ export default function Note() {
 
       {/* Notes Grid */}
       {loading ? (
-        <Text
-          style={{
-            color: isDarkMode ? "#ffffff" : "#000000",
-            textAlign: "center",
-            marginTop: getResponsiveSize(20),
-          }}
-        >
-          Loading notes...
-        </Text>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <Text
+            style={{
+              color: isDarkMode ? "#ffffff" : "#000000",
+              fontSize: cardTitleFontSize,
+              fontFamily: "Poppins_400Regular",
+            }}
+          >
+            Loading notes...
+          </Text>
+        </View>
       ) : (
         <FlatList
           data={displayData}
@@ -291,10 +372,13 @@ export default function Note() {
             item.id === "add" ? renderAddCard() : renderNoteCard({ item, index })
           }
           keyExtractor={(item) => item.id}
-          numColumns={2}
+          numColumns={numColumns}
           scrollEnabled={false}
           columnWrapperStyle={{
             justifyContent: "space-between",
+          }}
+          contentContainerStyle={{
+            paddingBottom: getSpacing(),
           }}
         />
       )}

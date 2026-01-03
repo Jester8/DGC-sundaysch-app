@@ -24,7 +24,7 @@ interface ManualData {
   mainPoints: MainPoint[];
   classDiscussion: string;
   conclusion: string;
-  declaration?: string;
+  declaration: string;
   month: string;
   date: string;
   order: number;
@@ -52,7 +52,7 @@ interface BibleVersion {
   abbr: string;
 }
 
-const MANUAL_STORAGE_PREFIX = "manual_detail_";
+const MANUAL_STORAGE_PREFIX = "manual_detail_jan4_";
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
 
@@ -64,18 +64,17 @@ const BIBLE_VERSIONS: BibleVersion[] = [
   { id: "AMP", name: "Amplified Bible", abbr: "AMP" },
 ];
 
-// Map book names to book numbers (1-66)
 const BOOK_MAP: { [key: string]: number } = {
   genesis: 1, exodus: 2, leviticus: 3, numbers: 4, deuteronomy: 5,
   joshua: 6, judges: 7, ruth: 8, 
-  "1samuel": 9, "1stsamuel": 9, "1st samuel": 9, "i samuel": 9,
-  "2samuel": 10, "2ndsamuel": 10, "2nd samuel": 10, "ii samuel": 10,
-  "1kings": 11, "1stkings": 11, "1st kings": 11, "i kings": 11,
-  "2kings": 12, "2ndkings": 12, "2nd kings": 12, "ii kings": 12,
-  "1chronicles": 13, "1stchronicles": 13, "1st chronicles": 13, "i chronicles": 13,
-  "2chronicles": 14, "2ndchronicles": 14, "2nd chronicles": 14, "ii chronicles": 14,
+  "1samuel": 9, "1stsamuel": 9, "isamuel": 9, "1sa": 9,
+  "2samuel": 10, "2ndsamuel": 10, "iisamuel": 10, "2sa": 10,
+  "1kings": 11, "1stkings": 11, "ikings": 11, "1ki": 11,
+  "2kings": 12, "2ndkings": 12, "iikings": 12, "2ki": 12,
+  "1chronicles": 13, "1stchronicles": 13, "ichronicles": 13, "1ch": 13,
+  "2chronicles": 14, "2ndchronicles": 14, "iichronicles": 14, "2ch": 14,
   ezra: 15, nehemiah: 16, esther: 17, job: 18, psalm: 19, psalms: 19, proverbs: 20,
-  ecclesiastes: 21, "song of solomon": 22, "songofsolomon": 22, isaiah: 23, jeremiah: 24,
+  ecclesiastes: 21, songofsolomon: 22, isaiah: 23, jeremiah: 24,
   lamentations: 25, ezekiel: 26, daniel: 27, hosea: 28, joel: 29, amos: 30,
   obadiah: 31, jonah: 32, micah: 33, nahum: 34, habakkuk: 35, zephaniah: 36,
   haggai: 37, zechariah: 38, malachi: 39, 
@@ -85,73 +84,64 @@ const BOOK_MAP: { [key: string]: number } = {
   john: 43, jn: 43,
   acts: 44, ac: 44,
   romans: 45, ro: 45, rm: 45,
-  "1corinthians": 46, "1stcorinthians": 46, "1st corinthians": 46, "i corinthians": 46, "1cor": 46, "1co": 46,
-  "2corinthians": 47, "2ndcorinthians": 47, "2nd corinthians": 47, "ii corinthians": 47, "2cor": 47, "2co": 47,
+  "1corinthians": 46, "1stcorinthians": 46, "icorinthians": 46, "1cor": 46, "1co": 46,
+  "2corinthians": 47, "2ndcorinthians": 47, "iicorinthians": 47, "2cor": 47, "2co": 47,
   galatians: 48, ga: 48, gal: 48,
   ephesians: 49, ep: 49, eph: 49,
   philippians: 50, php: 50, ph: 50,
   colossians: 51, col: 51, co: 51,
-  "1thessalonians": 52, "1stthessalonians": 52, "1st thessalonians": 52, "i thessalonians": 52, "1thess": 52, "1th": 52,
-  "2thessalonians": 53, "2ndthessalonians": 53, "2nd thessalonians": 53, "ii thessalonians": 53, "2thess": 53, "2th": 53,
-  "1timothy": 54, "1sttimothy": 54, "1st timothy": 54, "i timothy": 54, "1tim": 54, "1ti": 54,
-  "2timothy": 55, "2ndtimothy": 55, "2nd timothy": 55, "ii timothy": 55, "2tim": 55, "2ti": 55,
+  "1thessalonians": 52, "1stthessalonians": 52, "ithessalonians": 52, "1thess": 52, "1th": 52,
+  "2thessalonians": 53, "2ndthessalonians": 53, "iithessalonians": 53, "2thess": 53, "2th": 53,
+  "1timothy": 54, "1sttimothy": 54, "itimothy": 54, "1tim": 54, "1ti": 54,
+  "2timothy": 55, "2ndtimothy": 55, "iitimothy": 55, "2tim": 55, "2ti": 55,
   titus: 56, ti: 56, tit: 56,
-  philemon: 57, phm: 57,
+  philemon: 57, phm: 57, ph: 57,
   hebrews: 58, he: 58, heb: 58,
   james: 59, jas: 59, jm: 59,
-  "1peter": 60, "1stpeter": 60, "1st peter": 60, "i peter": 60, "1pet": 60, "1pe": 60, "1p": 60,
-  "2peter": 61, "2ndpeter": 61, "2nd peter": 61, "ii peter": 61, "2pet": 61, "2pe": 61, "2p": 61,
-  "1john": 62, "1stjohn": 62, "1st john": 62, "i john": 62, "1jn": 62, "1j": 62,
-  "2john": 63, "2ndjohn": 63, "2nd john": 63, "ii john": 63, "2jn": 63, "2j": 63,
-  "3john": 64, "3rdjohn": 64, "3rd john": 64, "iii john": 64, "3jn": 64, "3j": 64,
+  "1peter": 60, "1stpeter": 60, "ipeter": 60, "1pet": 60, "1pe": 60, "1p": 60,
+  "2peter": 61, "2ndpeter": 61, "iipeter": 61, "2pet": 61, "2pe": 61, "2p": 61,
+  "1john": 62, "1stjohn": 62, "ijohn": 62, "1jn": 62, "1j": 62,
+  "2john": 63, "2ndjohn": 63, "iijohn": 63, "2jn": 63, "2j": 63,
+  "3john": 64, "3rdjohn": 64, "iiijohn": 64, "3jn": 64, "3j": 64,
   jude: 65, ju: 65, jud: 65,
   revelation: 66, rev: 66, re: 66,
 };
 
-// Introduction Formatter Component (special handling for bullet points and headings)
 const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, fontFamily, color, lineHeight, scale }: any) => {
   if (!text) {
     return <Text style={{ fontSize: fontSize * scale, fontFamily, color, lineHeight: lineHeight * scale }}></Text>;
   }
 
-  // Complete list of all Bible books including all variations
   const books = [
     'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
-    'Joshua', 'Judges', 'Ruth', 
-    '1 Samuel', '2 Samuel', '1st Samuel', '2nd Samuel', 'I Samuel', 'II Samuel',
-    '1 Kings', '2 Kings', '1st Kings', '2nd Kings', 'I Kings', 'II Kings',
-    '1 Chronicles', '2 Chronicles', '1st Chronicles', '2nd Chronicles', 'I Chronicles', 'II Chronicles',
-    'Ezra', 'Nehemiah', 'Esther', 'Job',
-    'Psalm', 'Psalms',
-    'Proverbs', 'Ecclesiastes', 'Song of Solomon', 'Song of Songs',
+    'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel', '1 Kings', '2 Kings',
+    '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther', 'Job',
+    'Psalm', 'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon',
     'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel',
     'Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum',
     'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
-    'Matthew', 'Mark', 'Luke', 'John',
-    'Acts',
-    'Romans',
-    '1 Corinthians', '2 Corinthians', '1st Corinthians', '2nd Corinthians', 'I Corinthians', 'II Corinthians',
-    'Galatians', 'Ephesians', 'Philippians', 'Colossians',
-    '1 Thessalonians', '2 Thessalonians', '1st Thessalonians', '2nd Thessalonians', 'I Thessalonians', 'II Thessalonians',
-    '1 Timothy', '2 Timothy', '1st Timothy', '2nd Timothy', 'I Timothy', 'II Timothy',
-    'Titus', 'Philemon', 'Hebrews', 'James',
-    '1 Peter', '2 Peter', '1st Peter', '2nd Peter', 'I Peter', 'II Peter',
-    '1 John', '2 John', '3 John', '1st John', '2nd John', '3rd John', 'I John', 'II John', 'III John',
-    'Jude', 'Revelation', 'Revelations'
+    'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans',
+    '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
+    'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians',
+    '1 Timothy', '2 Timothy', 'Titus', 'Philemon', 'Hebrews', 'James',
+    '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude', 'Revelation'
   ];
 
   // Sort books by length (longest first) to ensure proper matching
+  // This ensures "1 Peter" matches before "Peter" would match incorrectly
   const sortedBooks = [...books].sort((a, b) => b.length - a.length);
   
   // Create regex pattern that properly handles books with numbers
   const bookPattern = sortedBooks
     .map(book => {
+      // Escape special regex characters
       const escapedBook = book.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Replace spaces with \\s+ to match any whitespace
       return escapedBook.replace(/\s+/g, '\\s+');
     })
     .join('|');
   
-  // Scripture pattern for introduction formatting
+  // Improved scripture pattern that properly handles all formats
   const scripturePattern = new RegExp(
     `\\b(${bookPattern})\\s+(\\d+(?::\\d+(?:[\\–\\-\\—]\\d+)?(?:,\\s*\\d+(?::\\d+(?:[\\–\\-\\—]\\d+)?)?)*)?)`,
     'gi'
@@ -224,6 +214,7 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
             type: 'scripture',
             content: fullMatch,
             book: bookName,
+            // We'll parse chapter and verse when clicked
             chapter: '', // Will parse on click
             verse: '', // Will parse on click
           });
@@ -330,14 +321,9 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
                         color: isDarkMode ? '#d0d0d0' : '#333',
                         fontWeight: "600",
                         textDecorationLine: "underline",
-                        textDecorationStyle: "solid",
-                        textDecorationColor: isDarkMode ? '#d0d0d0' : '#333',
                         fontSize: fontSize * scale,
                         fontFamily,
-                        lineHeight: lineHeight * scale,
-                        paddingHorizontal: 2,
-                        marginHorizontal: 1,
-                        letterSpacing: 0.2,
+                        lineHeight: lineHeight * scale
                       }}
                       onPress={() => {
                         onScripturePress(book, chapter, verse);
@@ -348,7 +334,7 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
                   );
                 } else {
                   return (
-                    <Text key={partIndex} style={{ letterSpacing: 0.2 }}>
+                    <Text key={partIndex}>
                       {part.content}
                     </Text>
                   );
@@ -362,7 +348,8 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
   );
 };
 
-// Scripture Text Component for most sections
+
+// Keep the original ScriptureText component for other sections
 const ScriptureText = ({ text, onScripturePress, isDarkMode, fontSize, fontFamily, color, lineHeight, scale }: any) => {
   if (!text) {
     return <Text style={{ fontSize: fontSize * scale, fontFamily, color, lineHeight: lineHeight * scale }}></Text>;
@@ -370,30 +357,19 @@ const ScriptureText = ({ text, onScripturePress, isDarkMode, fontSize, fontFamil
 
   const parts: any[] = [];
   
-  // Complete list of all Bible books including all variations
   const books = [
     'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
-    'Joshua', 'Judges', 'Ruth', 
-    '1 Samuel', '2 Samuel', '1st Samuel', '2nd Samuel', 'I Samuel', 'II Samuel',
-    '1 Kings', '2 Kings', '1st Kings', '2nd Kings', 'I Kings', 'II Kings',
-    '1 Chronicles', '2 Chronicles', '1st Chronicles', '2nd Chronicles', 'I Chronicles', 'II Chronicles',
-    'Ezra', 'Nehemiah', 'Esther', 'Job',
-    'Psalm', 'Psalms',
-    'Proverbs', 'Ecclesiastes', 'Song of Solomon', 'Song of Songs',
+    'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel', '1 Kings', '2 Kings',
+    '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther', 'Job',
+    'Psalm', 'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon',
     'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel',
     'Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum',
     'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
-    'Matthew', 'Mark', 'Luke', 'John',
-    'Acts',
-    'Romans',
-    '1 Corinthians', '2 Corinthians', '1st Corinthians', '2nd Corinthians', 'I Corinthians', 'II Corinthians',
-    'Galatians', 'Ephesians', 'Philippians', 'Colossians',
-    '1 Thessalonians', '2 Thessalonians', '1st Thessalonians', '2nd Thessalonians', 'I Thessalonians', 'II Thessalonians',
-    '1 Timothy', '2 Timothy', '1st Timothy', '2nd Timothy', 'I Timothy', 'II Timothy',
-    'Titus', 'Philemon', 'Hebrews', 'James',
-    '1 Peter', '2 Peter', '1st Peter', '2nd Peter', 'I Peter', 'II Peter',
-    '1 John', '2 John', '3 John', '1st John', '2nd John', '3rd John', 'I John', 'II John', 'III John',
-    'Jude', 'Revelation', 'Revelations'
+    'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans',
+    '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
+    'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians',
+    '1 Timothy', '2 Timothy', 'Titus', 'Philemon', 'Hebrews', 'James',
+    '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude', 'Revelation'
   ];
 
   // Sort books by length (longest first) for better matching
@@ -403,15 +379,11 @@ const ScriptureText = ({ text, onScripturePress, isDarkMode, fontSize, fontFamil
   const bookPattern = sortedBooks
     .map(book => {
       const escapedBook = book.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return escapedBook.replace(/\s+/g, '\\s*');
+      return escapedBook.replace(/\s+/g, '\\s+');
     })
     .join('|');
   
-  // Improved scripture pattern that handles various formats including en-dashes, commas, and ampersands
-  const scripturePattern = new RegExp(
-    `\\b(${bookPattern})\\s*(\\d+(?::\\d+(?:[\\–\\-\\—]\\d+)?(?:\\s*[&,;]\\s*\\d+(?::\\d+(?:[\\–\\-\\—]\\d+)?)?)*)?)`,
-    'gi'
-  );
+  const scripturePattern = new RegExp(`(${bookPattern})\\s+(\\d+(?::\\d+(?:[\\–\\-\\—]\\d+)?)?)`, 'gi');
 
   let lastIndex = 0;
   let match;
@@ -425,12 +397,8 @@ const ScriptureText = ({ text, onScripturePress, isDarkMode, fontSize, fontFamil
     const matchEnd = matchStart + match[0].length;
     const originalMatch = text.substring(matchStart, matchEnd);
     
-    // Add text before the match
     if (matchStart > lastIndex) {
-      parts.push({ 
-        type: 'text', 
-        content: text.substring(lastIndex, matchStart) 
-      });
+      parts.push({ type: 'text', content: text.substring(lastIndex, matchStart) });
     }
     
     const bookName = match[1]?.trim() || '';
@@ -439,16 +407,6 @@ const ScriptureText = ({ text, onScripturePress, isDarkMode, fontSize, fontFamil
     // Parse chapter and verse from the reference
     let chapter = '';
     let verse = '';
-    
-    // Clean up book name - remove ordinal suffixes but keep the number
-    let cleanBookName = bookName
-      .replace(/1st\s+/gi, '1 ')
-      .replace(/2nd\s+/gi, '2 ')
-      .replace(/3rd\s+/gi, '3 ')
-      .replace(/I\s+/gi, '1 ')
-      .replace(/II\s+/gi, '2 ')
-      .replace(/III\s+/gi, '3 ')
-      .trim();
     
     if (reference.includes(':')) {
       const partsRef = reference.split(':');
@@ -459,13 +417,13 @@ const ScriptureText = ({ text, onScripturePress, isDarkMode, fontSize, fontFamil
       chapter = reference;
     }
     
-    if (cleanBookName && chapter) {
+    if (bookName && chapter) {
       parts.push({
         type: 'scripture',
         content: originalMatch,
-        book: cleanBookName,
+        book: bookName,
         chapter: chapter,
-        verse: verse || '',
+        verse: verse,
       });
     } else {
       parts.push({ type: 'text', content: originalMatch });
@@ -474,82 +432,53 @@ const ScriptureText = ({ text, onScripturePress, isDarkMode, fontSize, fontFamil
     lastIndex = matchEnd;
   }
 
-  // Add remaining text after last match
   if (lastIndex < text.length) {
-    parts.push({ 
-      type: 'text', 
-      content: text.substring(lastIndex) 
-    });
+    parts.push({ type: 'text', content: text.substring(lastIndex) });
   }
   
-  // If no scripture references were found, return the text as-is
   if (parts.length === 0) {
-    return (
-      <Text style={{ 
-        fontSize: fontSize * scale, 
-        fontFamily, 
-        color, 
-        lineHeight: lineHeight * scale,
-        flexWrap: 'wrap'
-      }}>
-        {text}
-      </Text>
-    );
+    return <Text style={{ fontSize: fontSize * scale, fontFamily, color, lineHeight: lineHeight * scale, flexWrap: 'wrap' }}>{text}</Text>;
   }
   
-  // Render the parts with proper styling
-  return (
-    <Text style={{ 
-      fontSize: fontSize * scale, 
-      fontFamily, 
-      color, 
-      lineHeight: lineHeight * scale,
-      flexWrap: 'wrap'
-    }}>
-      {parts.map((part, index) => {
-        if (part.type === 'scripture' && part.book && part.chapter) {
-          return (
-            <Text
-              key={index}
-              style={{ 
-                color: isDarkMode ? '#d0d0d0' : '#333', 
-                fontWeight: "600", 
-                textDecorationLine: "underline",
-                textDecorationStyle: "solid",
-                textDecorationColor: isDarkMode ? '#d0d0d0' : '#333',
-                fontSize: fontSize * scale,
-                fontFamily,
-                lineHeight: lineHeight * scale,
-                paddingHorizontal: 2,
-                marginHorizontal: 1,
-                letterSpacing: 0.2,
-              }}
-              onPress={() => {
-                onScripturePress(part.book, part.chapter, part.verse);
-              }}
-            >
-              {part.content}
-            </Text>
-          );
-        } else {
-          return (
-            <Text 
-              key={index}
-              style={{ 
-                fontSize: fontSize * scale, 
-                fontFamily, 
-                color, 
-                lineHeight: lineHeight * scale,
-                letterSpacing: 0.2,
-              }}
-            >
-              {part.content}
-            </Text>
-          );
-        }
-      })}
-    </Text>
-  );
+  // Create an array of React elements
+  const elements = parts.map((part, index) => {
+    if (part.type === 'scripture' && part.book && part.chapter) {
+      return (
+        <Text
+          key={index}
+          style={{ 
+            color: isDarkMode ? '#d0d0d0' : '#333', 
+            fontWeight: "600", 
+            textDecorationLine: "underline",
+            fontSize: fontSize * scale,
+            fontFamily,
+            lineHeight: lineHeight * scale
+          }}
+          onPress={() => {
+            onScripturePress(part.book, part.chapter, part.verse);
+          }}
+        >
+          {part.content}
+        </Text>
+      );
+    } else {
+      return (
+        <Text 
+          key={index}
+          style={{ 
+            fontSize: fontSize * scale, 
+            fontFamily, 
+            color, 
+            lineHeight: lineHeight * scale 
+          }}
+        >
+          {part.content}
+        </Text>
+      );
+    }
+  });
+  
+  return <>{elements}</>;
 };
 
 const BibleModal = ({ visible, scriptureReference, onClose, isDarkMode }: any) => {
@@ -766,7 +695,7 @@ const BibleModal = ({ visible, scriptureReference, onClose, isDarkMode }: any) =
   );
 };
 
-export default function ManualDetail() {
+export default function January4ManualDetail() {
   const { isDarkMode } = useNavigation();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -787,12 +716,6 @@ export default function ManualDetail() {
   } catch (error) {
     manualData = null;
   }
-
-  // Check if this is a special manual (January 4th OR January 11th)
-  const isSpecialManual = manualData?.declaration !== undefined && manualData?.declaration !== null;
-  
-  // Also specifically check for January 11th manual
-  const isJanuary11Manual = manualData?.date === "January 11";
 
   useEffect(() => {
     panResponderRef.current = PanResponder.create({
@@ -851,20 +774,11 @@ export default function ManualDetail() {
           )}
 
           <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
-            {/* Only show theme if NOT a special manual (Jan 4 or Jan 11) */}
-            {!isSpecialManual && !isJanuary11Manual && manualData.theme && (
+            {/* Show theme if available */}
+            {manualData.theme && (
               <View style={{ marginBottom: 12 }}>
                 <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#999999" : "#000000", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Theme: {manualData.theme}
-                </Text>
-              </View>
-            )}
-
-            {/* Special header for January 11th */}
-            {isJanuary11Manual && !manualData.theme && (
-              <View style={{ marginBottom: 12 }}>
-                <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: "#9d00d4", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: "bold" }}>
-                  🎉 UNLOCKED: JANUARY 11TH SPECIAL EDITION
                 </Text>
               </View>
             )}
@@ -882,16 +796,7 @@ export default function ManualDetail() {
                 <View style={{ marginLeft: -10, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4, alignSelf: "flex-start", marginBottom: 12 }}>
                   <Text style={{ fontSize: 11 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5 }}>SCRIPTURE TEXT</Text>
                 </View>
-                <ScriptureText 
-                  text={manualData.text} 
-                  onScripturePress={handleScripturePress} 
-                  isDarkMode={isDarkMode} 
-                  fontSize={14} 
-                  fontFamily="Poppins_400Regular" 
-                  color={isDarkMode ? "#FFFFFF" : "#000000"} 
-                  lineHeight={24} 
-                  scale={scale} 
-                />
+                <ScriptureText text={manualData.text} onScripturePress={handleScripturePress} isDarkMode={isDarkMode} fontSize={14} fontFamily="Poppins_400Regular" color={isDarkMode ? "#FFFFFF" : "#000000"} lineHeight={24} scale={scale} />
               </View>
             )}
 
@@ -900,16 +805,7 @@ export default function ManualDetail() {
                 <View style={{ marginBottom: 12 }}>
                   <Text style={{ fontSize: 11 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5, textTransform: "uppercase" }}>Memory Verse</Text>
                 </View>
-                <ScriptureText 
-                  text={manualData.memoryVerse} 
-                  onScripturePress={handleScripturePress} 
-                  isDarkMode={isDarkMode} 
-                  fontSize={14} 
-                  fontFamily="Poppins_400Regular" 
-                  color={isDarkMode ? "#d0d0d0" : "#333333"} 
-                  lineHeight={24} 
-                  scale={scale} 
-                />
+                <ScriptureText text={manualData.memoryVerse} onScripturePress={handleScripturePress} isDarkMode={isDarkMode} fontSize={14} fontFamily="Poppins_400Regular" color={isDarkMode ? "#d0d0d0" : "#333333"} lineHeight={24} scale={scale} />
               </View>
             )}
 
@@ -999,8 +895,8 @@ export default function ManualDetail() {
               </View>
             )}
 
-            {/* Show declaration if this is a special manual (Jan 4 OR Jan 11) */}
-            {(isSpecialManual || isJanuary11Manual) && manualData.declaration && (
+            {/* Show declaration section (replacing January 4th blessings) */}
+            {manualData.declaration && (
               <View style={{ marginBottom: 32, backgroundColor: isDarkMode ? "#1a0f2e" : "#f3e5f5", borderRadius: 8, padding: 20, borderLeftWidth: 4, borderLeftColor: "#9d00d4" }}>
                 <Text style={{ fontSize: 11 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 14 }}>Declaration</Text>
                 <Text style={{ fontSize: 15 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#d0d0d0" : "#333333", lineHeight: 26 * scale, fontStyle: "italic" }}>
@@ -1009,64 +905,26 @@ export default function ManualDetail() {
               </View>
             )}
 
-            {/* Only show recommended books if NOT a special manual */}
-            {!isSpecialManual && !isJanuary11Manual && manualData.recommendedBooks && manualData.recommendedBooks.length > 0 && (
-              <View style={{ marginBottom: 32 }}>
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 12 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textTransform: "uppercase", letterSpacing: 0.5 }}>Recommended Books</Text>
-                </View>
-                {manualData.recommendedBooks.map((book, index) => (
-                  <View key={index} style={[styles.bookCard, { backgroundColor: isDarkMode ? "#1a1a1a" : "#f9f9f9", borderColor: isDarkMode ? "#2a2a2a" : "#e8e8e8", marginBottom: 12 }]}>
-                    <View style={[styles.bookIconContainer, { backgroundColor: isDarkMode ? "#2a1a3a" : "#e8d5f2" }]}>
-                      <MaterialIcons name="book" size={28} color="#9d00d4" />
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 14 }}>
-                      <Text style={{ fontSize: 14 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", marginBottom: 4 }} numberOfLines={2}>
-                        {book}
-                      </Text>
-                      <Text style={{ fontSize: 12 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#888888" : "#999999" }}>
-                        Recommended Read
-                      </Text>
-                    </View>
-                    <MaterialIcons name="chevron-right" size={24} color="#9d00d4" />
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* For January 11th, show special recommended books or message */}
-            {isJanuary11Manual && (
-              <View style={{ marginBottom: 32 }}>
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 12 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textTransform: "uppercase", letterSpacing: 0.5 }}>January 11th Special Recommendations</Text>
-                </View>
-                <View style={[styles.bookCard, { backgroundColor: isDarkMode ? "#1a1a1a" : "#f9f9f9", borderColor: isDarkMode ? "#2a2a2a" : "#e8e8e8", marginBottom: 12 }]}>
-                  <View style={[styles.bookIconContainer, { backgroundColor: isDarkMode ? "#2a1a3a" : "#e8d5f2" }]}>
-                    <MaterialIcons name="star" size={28} color="#9d00d4" />
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 14 }}>
-                    <Text style={{ fontSize: 14 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", marginBottom: 4 }} numberOfLines={2}>
-                      The Power of Purpose
-                    </Text>
-                    <Text style={{ fontSize: 12 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#888888" : "#999999" }}>
-                      Special January 11th Edition
-                    </Text>
-                  </View>
-                  <MaterialIcons name="chevron-right" size={24} color="#9d00d4" />
-                </View>
-              </View>
-            )}
-
+            {/* Feedback Link - consistent with other manuals */}
             {manualData.feedbackLink && (
-              <View style={{ marginBottom: 32, paddingBottom: 24 }}>
+              <View style={{ marginBottom: 40, paddingBottom: 32 }}>
                 <View style={{ backgroundColor: isDarkMode ? "#1a0f2e" : "#f3e5f5", borderRadius: 8, padding: 20, alignItems: "center", borderLeftWidth: 4, borderLeftColor: "#9d00d4" }}>
                   <View style={{ width: 60, height: 60, backgroundColor: isDarkMode ? "#2a1a3a" : "#e8d5f2", borderRadius: 8, justifyContent: "center", alignItems: "center", marginBottom: 18 }}>
                     <MaterialIcons name="chat" size={32} color="#9d00d4" />
                   </View>
-                  <Text style={{ fontSize: 16 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textAlign: "center", marginBottom: 10 }}>Have Feedback?</Text>
-                  <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#b0b0b0" : "#666666", textAlign: "center", marginBottom: 18, lineHeight: 20 }}>Share your questions, testimonies, or feedback with us</Text>
-                  <TouchableOpacity onPress={() => Linking.openURL(`https://${manualData.feedbackLink}`)} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                    <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_600SemiBold", color: "#9d00d4" }}>Share Feedback</Text>
+                  <Text style={{ fontSize: 16 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textAlign: "center", marginBottom: 10 }}>
+                    Have Feedback?
+                  </Text>
+                  <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#b0b0b0" : "#666666", textAlign: "center", marginBottom: 18, lineHeight: 20 }}>
+                    Share your questions, testimonies, or feedback with us
+                  </Text>
+                  <TouchableOpacity 
+                    onPress={() => Linking.openURL(`https://${manualData.feedbackLink}`)} 
+                    style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
+                  >
+                    <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_600SemiBold", color: "#9d00d4" }}>
+                      Share Feedback
+                    </Text>
                     <MaterialIcons name="arrow-forward" size={16} color="#9d00d4" />
                   </TouchableOpacity>
                 </View>

@@ -146,18 +146,21 @@ export default function Noted() {
             {filteredNotes.map((note) => (
               <TouchableOpacity
                 key={note.id}
-                style={styles.noteCard}
+                style={[
+                  styles.noteCard,
+                  { backgroundColor: isDarkMode ? "#1a1a1a" : "#242424" }
+                ]}
                 onPress={() => handleNotePress(note.id)}
               >
                 <Text style={[
                   styles.noteTitle, 
-                  { fontSize: getResponsiveFontSize(12) }
+                  { fontSize: getResponsiveFontSize(12), color: isDarkMode ? "#FFF" : "#ffffffff" }
                 ]} numberOfLines={3}>
                   {note.title || "Untitled Note"}
                 </Text>
                 <Text style={[
                   styles.noteDate, 
-                  { fontSize: getResponsiveFontSize(10) }
+                  { fontSize: getResponsiveFontSize(10), color: isDarkMode ? "#999" : "#ffffffff" }
                 ]} numberOfLines={2}>
                   {note.date}
                 </Text>
@@ -207,7 +210,7 @@ export default function Noted() {
         ]}
         onPress={handleAddNote}
       >
-        <Feather name="plus" size={getResponsiveIconSize(20)} color={isDarkMode ? "#B800E6" : "#FFFFFF"} />
+        <Feather name="plus" size={getResponsiveIconSize(20)} color="#FFFFFF" />
       </TouchableOpacity>
 
       <BottomTabNavigation />
@@ -249,7 +252,6 @@ const styles = StyleSheet.create({
   },
   noteCard: {
     width: "48%",
-    backgroundColor: "#B800E6",
     borderRadius: 10,
     padding: 12,
     minHeight: 80,
@@ -257,12 +259,10 @@ const styles = StyleSheet.create({
   },
   noteTitle: {
     fontWeight: "600",
-    color: "#FFFFFF",
     fontFamily: "Poppins_600SemiBold",
     lineHeight: 16,
   },
   noteDate: {
-    color: "#FFFFFF",
     fontFamily: "Poppins_400Regular",
     marginTop: 8,
   },
@@ -293,7 +293,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 10,
-    backgroundColor: "#000000",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",

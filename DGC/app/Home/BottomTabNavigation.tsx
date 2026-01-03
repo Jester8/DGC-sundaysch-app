@@ -74,13 +74,13 @@ export default function BottomTabNavigation() {
         <Feather
           name="home"
           size={getResponsiveSize(21)}
-          color={activeTab === "Home" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000")}
+          color={activeTab === "Home" ? (isDarkMode ? "#ffffff" : "#000000ff") : (isDarkMode ? "#ffffff" : "#000000")}
         />
         <Text
           style={{
             fontSize: getResponsiveSize(11),
             fontFamily: "Poppins_500Medium",
-            color: activeTab === "Home" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000"),
+            color: activeTab === "Home" ? (isDarkMode ? "#ffffff" : "#000000ff") : (isDarkMode ? "#ffffff" : "#000000"),
             marginTop: getTabletPadding(getResponsiveSize(4)),
           }}
         >
@@ -101,13 +101,13 @@ export default function BottomTabNavigation() {
         <MaterialCommunityIcons
           name={activeTab === "Outlines" ? "file-document" : "file-document-outline"}
           size={getResponsiveSize(21)}
-          color={activeTab === "Outlines" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000")}
+          color={activeTab === "Outlines" ? (isDarkMode ? "#ffffff" : "#000000ff") : (isDarkMode ? "#ffffff" : "#000000")}
         />
         <Text
           style={{
             fontSize: getResponsiveSize(11),
             fontFamily: "Poppins_500Medium",
-            color: activeTab === "Outlines" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000"),
+            color: activeTab === "Outlines" ? (isDarkMode ? "#ffffff" : "#000000ff") : (isDarkMode ? "#ffffff" : "#000000"),
             marginTop: getTabletPadding(getResponsiveSize(4)),
           }}
         >
@@ -128,13 +128,13 @@ export default function BottomTabNavigation() {
         <Feather
           name="edit-3"
           size={getResponsiveSize(21)}
-          color={activeTab === "noted" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000")}
+          color={activeTab === "noted" ? (isDarkMode ? "#ffffff" : "#000000ff") : (isDarkMode ? "#ffffff" : "#000000")}
         />
         <Text
           style={{
             fontSize: getResponsiveSize(11),
             fontFamily: "Poppins_500Medium",
-            color: activeTab === "noted" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000"),
+            color: activeTab === "noted" ? (isDarkMode ? "#ffffff" : "#000000ff") : (isDarkMode ? "#ffffff" : "#000000"),
             marginTop: getTabletPadding(getResponsiveSize(4)),
           }}
         >
@@ -155,13 +155,13 @@ export default function BottomTabNavigation() {
         <Feather
           name="user"
           size={getResponsiveSize(21)}
-          color={activeTab === "Profile" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000")}
+          color={activeTab === "Profile" ? (isDarkMode ? "#ffffff" : "#000000ff") : (isDarkMode ? "#ffffff" : "#000000")}
         />
         <Text
           style={{
             fontSize: getResponsiveSize(11),
             fontFamily: "Poppins_500Medium",
-            color: activeTab === "Profile" ? (isDarkMode ? "#ffffff" : "#9d00d4") : (isDarkMode ? "#ffffff" : "#000000"),
+            color: activeTab === "Profile" ? (isDarkMode ? "#ffffff" : "#000000ff") : (isDarkMode ? "#ffffff" : "#000000"),
             marginTop: getTabletPadding(getResponsiveSize(4)),
           }}
         >

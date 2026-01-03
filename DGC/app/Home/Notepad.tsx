@@ -6,26 +6,31 @@ import {
   Alert,
   ScrollView,
   useWindowDimensions,
+  StyleSheet,
+  Image,
+  Modal,
 } from "react-native";
-import { Ionicons, MaterialIcons, FontAwesome } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useNavigation } from "./_navigationContext";
+import * as ImagePicker from "expo-image-picker";
 
 interface NoteItem {
   id: string;
   title: string;
   content: string;
   date: string;
+  images?: string[];
 }
 
-interface TextSegment {
+interface FormattedSegment {
   text: string;
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-  color?: string;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  color: string;
 }
 
 export default function Notepad() {
@@ -41,21 +46,30 @@ export default function Notepad() {
   const [loading, setLoading] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [showFormatMenu, setShowFormatMenu] = useState(false);
-  const [textSegments, setTextSegments] = useState<TextSegment[]>([]);
   const [selectedRange, setSelectedRange] = useState<{ start: number; end: number } | null>(null);
+  const [images, setImages] = useState<string[]>([]);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  
+  // Formatting state
+  const [formattedSegments, setFormattedSegments] = useState<FormattedSegment[]>([]);
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [textColor, setTextColor] = useState("#000000");
 
   const getResponsiveSize = (baseSize: number) => {
     const scale = width / 375;
     return Math.max(baseSize * scale, baseSize * 0.8);
   };
 
-  const isTablet = width > 600;
   const isPhone = width <= 600;
 
-  const getHeaderIconSize = () => isPhone ? 20 : getResponsiveSize(14);
-  const getHeaderTextSize = () => isPhone ? 16 : getResponsiveSize(10);
-  const getTitleInputSize = () => isPhone ? 14 : getResponsiveSize(10);
-  const getContentInputSize = () => isPhone ? 12 : getResponsiveSize(12);
+  const getHeaderIconSize = () => (isPhone ? 18 : getResponsiveSize(14));
+  const getHeaderTextSize = () => (isPhone ? 14 : getResponsiveSize(10));
+  const getTitleInputSize = () => (isPhone ? 16 : getResponsiveSize(10));
+  const getContentInputSize = () => (isPhone ? 12 : getResponsiveSize(12));
+  const getToolbarIconSize = () => (isPhone ? getResponsiveSize(24) : 14);
 
   useEffect(() => {
     if (params?.noteId && params.noteId !== "null") {
@@ -74,6 +88,8 @@ export default function Notepad() {
           setTitle(note.title);
           setContent(note.content);
           setNoteId(note.id);
+          setImages(note.images || []);
+          parseFormattedContent(note.content);
         }
       }
     } catch (error) {
@@ -83,7 +99,67 @@ export default function Notepad() {
     }
   }, []);
 
-  const autoSaveNote = useCallback(async (newTitle: string, newContent: string) => {
+  const parseFormattedContent = (text: string) => {
+    const segments: FormattedSegment[] = [];
+    let i = 0;
+
+    while (i < text.length) {
+      let bold = false;
+      let italic = false;
+      let underline = false;
+      let color = "#000000";
+
+      // Check for formatting markers
+      if (text.substr(i, 2) === "**") {
+        bold = true;
+        i += 2;
+      }
+      if (text.substr(i, 1) === "*" && !bold) {
+        italic = true;
+        i += 1;
+      }
+      if (text.substr(i, 2) === "__") {
+        underline = true;
+        i += 2;
+      }
+
+      // Check for color marker
+      const colorMatch = text.substr(i).match(/^<color="#([A-Fa-f0-9]{6})">/) || 
+                        text.substr(i).match(/^<color="(#[A-Fa-f0-9]{6})">/) ||
+                        text.substr(i).match(/^<color='(#[A-Fa-f0-9]{6})'>/);
+      if (colorMatch) {
+        color = colorMatch[1].startsWith("#") ? colorMatch[1] : "#" + colorMatch[1];
+        i += colorMatch[0].length;
+      }
+
+      // Find end of segment
+      let endIndex = text.length;
+      if (bold) endIndex = Math.min(endIndex, text.indexOf("**", i));
+      if (italic) endIndex = Math.min(endIndex, text.indexOf("*", i));
+      if (underline) endIndex = Math.min(endIndex, text.indexOf("__", i));
+
+      let segmentText = text.substring(i, endIndex);
+      
+      // Remove closing tags
+      segmentText = segmentText.replace(/\*\*$/, "").replace(/\*$/, "").replace(/__$/, "").replace(/<\/color>$/, "");
+
+      if (segmentText) {
+        segments.push({
+          text: segmentText,
+          bold,
+          italic,
+          underline,
+          color,
+        });
+      }
+
+      i = endIndex + (bold ? 2 : italic ? 1 : underline ? 2 : 0);
+    }
+
+    setFormattedSegments(segments);
+  };
+
+  const autoSaveNote = useCallback(async (newTitle: string, newContent: string, newImages: string[] = []) => {
     try {
       const currentDate = new Date().toLocaleDateString("en-US", {
         year: "numeric",
@@ -105,6 +181,7 @@ export default function Notepad() {
             title: newTitle,
             content: newContent,
             date: currentDate,
+            images: newImages,
           };
         }
       } else if (newTitle.trim()) {
@@ -113,6 +190,7 @@ export default function Notepad() {
           title: newTitle,
           content: newContent,
           date: currentDate,
+          images: newImages,
         };
         notes.push(newNote);
         setNoteId(newNote.id);
@@ -126,144 +204,141 @@ export default function Notepad() {
 
   const handleTitleChange = (text: string) => {
     setTitle(text);
-    autoSaveNote(text, content);
+    autoSaveNote(text, content, images);
   };
 
   const handleContentChange = (text: string) => {
     setContent(text);
-    autoSaveNote(title, text);
+    parseFormattedContent(text);
+    autoSaveNote(title, text, images);
   };
 
   const handleDeleteNote = async () => {
-    Alert.alert(
-      "Delete Note",
-      "Are you sure you want to delete this note?",
-      [
-        {
-          text: "Cancel",
-          onPress: () => {},
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          onPress: async () => {
-            try {
-              const savedNotes = await AsyncStorage.getItem("notes");
-              if (savedNotes && noteId) {
-                let notes: NoteItem[] = JSON.parse(savedNotes);
-                notes = notes.filter((n) => n.id !== noteId);
-                await AsyncStorage.setItem("notes", JSON.stringify(notes));
-                router.back();
-              }
-            } catch (error) {
-              console.error("Error deleting note:", error);
-              Alert.alert("Error", "Failed to delete note");
+    Alert.alert("Delete Note", "Are you sure you want to delete this note?", [
+      {
+        text: "Cancel",
+        onPress: () => {},
+        style: "cancel",
+      },
+      {
+        text: "Delete",
+        onPress: async () => {
+          try {
+            const savedNotes = await AsyncStorage.getItem("notes");
+            if (savedNotes && noteId) {
+              let notes: NoteItem[] = JSON.parse(savedNotes);
+              notes = notes.filter((n) => n.id !== noteId);
+              await AsyncStorage.setItem("notes", JSON.stringify(notes));
+              router.back();
             }
-          },
-          style: "destructive",
+          } catch (error) {
+            console.error("Error deleting note:", error);
+            Alert.alert("Error", "Failed to delete note");
+          }
         },
-      ]
-    );
+        style: "destructive",
+      },
+    ]);
+  };
+
+  const applyFormatting = (format: "bold" | "italic" | "underline" | "color", colorValue?: string) => {
+    if (!selectedRange || selectedRange.start === selectedRange.end) {
+      Alert.alert("Select Text", "Please select text to format");
+      return;
+    }
+
+    const before = content.substring(0, selectedRange.start);
+    const selectedText = content.substring(selectedRange.start, selectedRange.end);
+    const after = content.substring(selectedRange.end);
+
+    let formattedText = selectedText;
+
+    if (format === "bold") {
+      formattedText = isBold ? selectedText.replace(/\*\*/g, "") : `**${selectedText}**`;
+    } else if (format === "italic") {
+      formattedText = isItalic ? selectedText.replace(/\*/g, "") : `*${selectedText}*`;
+    } else if (format === "underline") {
+      formattedText = isUnderline ? selectedText.replace(/__/g, "") : `__${selectedText}__`;
+    } else if (format === "color" && colorValue) {
+      formattedText = `<color="${colorValue}">${selectedText}</color>`;
+    }
+
+    const newContent = before + formattedText + after;
+    setContent(newContent);
+    parseFormattedContent(newContent);
+    autoSaveNote(title, newContent, images);
+    setShowFormatMenu(false);
+    setSelectedRange(null);
   };
 
   const handleBulletList = () => {
-    const before = content.substring(0, cursorPosition);
-    const after = content.substring(cursorPosition);
-    const newContent = before + "• " + after;
+    const newContent = content + "\n• ";
     setContent(newContent);
-    autoSaveNote(title, newContent);
-    setCursorPosition(cursorPosition + 2);
+    autoSaveNote(title, newContent, images);
   };
 
-  const handleNumberedListClick = () => {
-    setShowFormatMenu(true);
-  };
-
-  const applyNumberedList = () => {
-    const lineNumber = (content.substring(0, cursorPosition).match(/\n/g) || []).length + 1;
-    const before = content.substring(0, cursorPosition);
-    const after = content.substring(cursorPosition);
-    const newContent = before + `${lineNumber}. ` + after;
+  const handleNumberedList = () => {
+    const lines = content.split("\n");
+    const lastLine = lines[lines.length - 1];
+    const match = lastLine.match(/^(\d+)\./);
+    const nextNumber = match ? parseInt(match[1]) + 1 : 1;
+    const newContent = content + `\n${nextNumber}. `;
     setContent(newContent);
-    autoSaveNote(title, newContent);
-    setCursorPosition(cursorPosition + `${lineNumber}. `.length);
-    setShowFormatMenu(false);
+    autoSaveNote(title, newContent, images);
   };
 
-  const applyBold = () => {
-    const selectedText = content.substring(selectedRange?.start || cursorPosition, selectedRange?.end || cursorPosition);
-    if (selectedText.length === 0) {
-      const before = content.substring(0, cursorPosition);
-      const after = content.substring(cursorPosition);
-      const newContent = before + "**bold text**" + after;
-      setContent(newContent);
-      autoSaveNote(title, newContent);
-    } else {
-      const before = content.substring(0, selectedRange!.start);
-      const after = content.substring(selectedRange!.end);
-      const newContent = before + "**" + selectedText + "**" + after;
-      setContent(newContent);
-      autoSaveNote(title, newContent);
+  const launchCamera = async () => {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permission Denied", "Camera access is required");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        const imageUri = result.assets[0].uri;
+        const newImages = [...images, imageUri];
+        setImages(newImages);
+        autoSaveNote(title, content, newImages);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to launch camera");
+      console.error(error);
     }
-    setShowFormatMenu(false);
-    setSelectedRange(null);
   };
 
-  const applyItalic = () => {
-    const selectedText = content.substring(selectedRange?.start || cursorPosition, selectedRange?.end || cursorPosition);
-    if (selectedText.length === 0) {
-      const before = content.substring(0, cursorPosition);
-      const after = content.substring(cursorPosition);
-      const newContent = before + "*italic text*" + after;
-      setContent(newContent);
-      autoSaveNote(title, newContent);
-    } else {
-      const before = content.substring(0, selectedRange!.start);
-      const after = content.substring(selectedRange!.end);
-      const newContent = before + "*" + selectedText + "*" + after;
-      setContent(newContent);
-      autoSaveNote(title, newContent);
+  const pickImageFromLibrary = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        const imageUri = result.assets[0].uri;
+        const newImages = [...images, imageUri];
+        setImages(newImages);
+        autoSaveNote(title, content, newImages);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to pick image from library");
+      console.error(error);
     }
-    setShowFormatMenu(false);
-    setSelectedRange(null);
   };
 
-  const applyUnderline = () => {
-    const selectedText = content.substring(selectedRange?.start || cursorPosition, selectedRange?.end || cursorPosition);
-    if (selectedText.length === 0) {
-      const before = content.substring(0, cursorPosition);
-      const after = content.substring(cursorPosition);
-      const newContent = before + "__underlined text__" + after;
-      setContent(newContent);
-      autoSaveNote(title, newContent);
-    } else {
-      const before = content.substring(0, selectedRange!.start);
-      const after = content.substring(selectedRange!.end);
-      const newContent = before + "__" + selectedText + "__" + after;
-      setContent(newContent);
-      autoSaveNote(title, newContent);
-    }
-    setShowFormatMenu(false);
-    setSelectedRange(null);
-  };
-
-  const applyColor = (color: string) => {
-    const selectedText = content.substring(selectedRange?.start || cursorPosition, selectedRange?.end || cursorPosition);
-    if (selectedText.length === 0) {
-      const before = content.substring(0, cursorPosition);
-      const after = content.substring(cursorPosition);
-      const newContent = before + `<color="${color}">colored text</color>` + after;
-      setContent(newContent);
-      autoSaveNote(title, newContent);
-    } else {
-      const before = content.substring(0, selectedRange!.start);
-      const after = content.substring(selectedRange!.end);
-      const newContent = before + `<color="${color}">` + selectedText + `</color>` + after;
-      setContent(newContent);
-      autoSaveNote(title, newContent);
-    }
-    setShowFormatMenu(false);
-    setSelectedRange(null);
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+    autoSaveNote(title, content, newImages);
   };
 
   return (
@@ -273,7 +348,7 @@ export default function Notepad() {
         backgroundColor: isDarkMode ? "#000000" : "#ffffff",
       }}
     >
-      {/* Header - Centered */}
+      {/* Header */}
       <View
         style={{
           flexDirection: "row",
@@ -281,8 +356,7 @@ export default function Notepad() {
           alignItems: "center",
           paddingHorizontal: getResponsiveSize(16),
           paddingVertical: getResponsiveSize(50),
-          borderBottomWidth: 1,
-          borderBottomColor: isDarkMode ? "#333333" : "#e0e0e0",
+          paddingBottom: getResponsiveSize(12),
         }}
       >
         <TouchableOpacity onPress={() => router.back()}>
@@ -305,24 +379,14 @@ export default function Notepad() {
           NOTE
         </Text>
 
-        <View style={{ width: getResponsiveSize(24) }} />
+       
       </View>
 
+      
+
       {loading ? (
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Text
-            style={{
-              color: isDarkMode ? "#ffffff" : "#000000",
-            }}
-          >
-            Loading note...
-          </Text>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <Text style={{ color: isDarkMode ? "#ffffff" : "#000000" }}>Loading note...</Text>
         </View>
       ) : (
         <ScrollView
@@ -373,7 +437,86 @@ export default function Notepad() {
             }}
           />
 
-          <View style={{ height: getResponsiveSize(100) }} />
+          {/* Images Display */}
+          {images.length > 0 && (
+            <View
+              style={{
+                marginTop: getResponsiveSize(20),
+                marginBottom: getResponsiveSize(20),
+              }}
+            >
+              <Text
+                style={{
+                  color: isDarkMode ? "#ffffff" : "#000000",
+                  fontFamily: "Poppins_600SemiBold",
+                  marginBottom: getResponsiveSize(12),
+                  fontSize: 14,
+                }}
+              >
+                Attached Images ({images.length})
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: getResponsiveSize(12),
+                }}
+              >
+                {images.map((imageUri, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      position: "relative",
+                      width: getResponsiveSize(100),
+                      height: getResponsiveSize(100),
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedImageIndex(index);
+                        setShowImageModal(true);
+                      }}
+                    >
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          borderRadius: 8,
+                        }}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => removeImage(index)}
+                      style={{
+                        position: "absolute",
+                        top: -8,
+                        right: -8,
+                        backgroundColor: "#ff4444",
+                        borderRadius: 12,
+                        width: 24,
+                        height: 24,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: "#ffffff",
+                          fontSize: 16,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        ✕
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View style={{ height: getResponsiveSize(120) }} />
         </ScrollView>
       )}
 
@@ -383,305 +526,92 @@ export default function Notepad() {
           borderTopWidth: 1,
           borderTopColor: isDarkMode ? "#333333" : "#e0e0e0",
           backgroundColor: isDarkMode ? "#1a1a1a" : "#f9f9f9",
-          paddingVertical: getResponsiveSize(12),
+          paddingTop: getResponsiveSize(16),
+          paddingBottom: getResponsiveSize(40),
           paddingHorizontal: getResponsiveSize(12),
         }}
       >
-        {/* Formatting Options Row */}
         <View
           style={{
             flexDirection: "row",
             justifyContent: "space-around",
             alignItems: "center",
-            marginBottom: getResponsiveSize(12),
           }}
         >
           {/* Bullet List */}
-          <TouchableOpacity
-            style={{
-              alignItems: "center",
-              paddingHorizontal: getResponsiveSize(12),
-              paddingVertical: getResponsiveSize(8),
-            }}
-            onPress={handleBulletList}
-          >
+          <TouchableOpacity onPress={handleBulletList} style={{ alignItems: "center", padding: 8 }}>
             <MaterialIcons
               name="format-list-bulleted"
-              size={getResponsiveSize(24)}
-              color={isDarkMode ? "#9d00d4" : "#9d00d4"}
+              size={getToolbarIconSize()}
+               color={isDarkMode ? "#ffffff" : "#000000ff"}
             />
           </TouchableOpacity>
 
-          {/* Numbered List with Format Menu */}
-          <TouchableOpacity
-            style={{
-              alignItems: "center",
-              paddingHorizontal: getResponsiveSize(12),
-              paddingVertical: getResponsiveSize(8),
-            }}
-            onPress={handleNumberedListClick}
-          >
+          {/* Numbered List */}
+          <TouchableOpacity onPress={handleNumberedList} style={{ alignItems: "center", padding: 8 }}>
             <MaterialIcons
               name="format-list-numbered"
-              size={getResponsiveSize(24)}
-              color={isDarkMode ? "#9d00d4" : "#9d00d4"}
+              size={getToolbarIconSize()}
+             color={isDarkMode ? "#ffffff" : "#000000ff"}
             />
           </TouchableOpacity>
 
+      
           {/* Camera */}
           <TouchableOpacity
-            style={{
-              alignItems: "center",
-              paddingHorizontal: getResponsiveSize(12),
-              paddingVertical: getResponsiveSize(8),
-            }}
-            onPress={() => Alert.alert("Camera", "Camera feature coming soon")}
+            onPress={launchCamera}
+            style={{ alignItems: "center", padding: 8 }}
           >
             <MaterialIcons
               name="photo-camera"
-              size={getResponsiveSize(24)}
-              color={isDarkMode ? "#9d00d4" : "#9d00d4"}
+              size={getToolbarIconSize()}
+              color={isDarkMode ? "#ffffff" : "#000000ff"}
             />
           </TouchableOpacity>
 
-          {/* Gallery/Image */}
+          {/* Gallery */}
           <TouchableOpacity
-            style={{
-              alignItems: "center",
-              paddingHorizontal: getResponsiveSize(12),
-              paddingVertical: getResponsiveSize(8),
-            }}
-            onPress={() => Alert.alert("Gallery", "Gallery feature coming soon")}
+            onPress={pickImageFromLibrary}
+            style={{ alignItems: "center", padding: 8 }}
           >
             <MaterialIcons
               name="image"
-              size={getResponsiveSize(24)}
-              color={isDarkMode ? "#9d00d4" : "#9d00d4"}
+              size={getToolbarIconSize()}
+             color={isDarkMode ? "#ffffff" : "#000000ff"}
             />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Format Menu Modal */}
-      {showFormatMenu && (
+      {/* Image Modal */}
+      <Modal
+        visible={showImageModal}
+        transparent={true}
+        onRequestClose={() => setShowImageModal(false)}
+      >
         <View
           style={{
-            position: "absolute",
-            bottom: getResponsiveSize(100),
-            left: 0,
-            right: 0,
-            backgroundColor: isDarkMode ? "#2a2a2a" : "#f0f0f0",
-            borderTopWidth: 1,
-            borderTopColor: isDarkMode ? "#444" : "#ddd",
-            paddingVertical: getResponsiveSize(16),
-            paddingHorizontal: getResponsiveSize(16),
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.9)",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          {/* Numbered List Option */}
           <TouchableOpacity
-            style={{
-              paddingVertical: getResponsiveSize(12),
-              paddingHorizontal: getResponsiveSize(12),
-              marginBottom: getResponsiveSize(8),
-              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-              borderRadius: 8,
-              flexDirection: "row",
-              alignItems: "center",
-            }}
-            onPress={applyNumberedList}
+            style={{ position: "absolute", top: 50, right: 20, zIndex: 10 }}
+            onPress={() => setShowImageModal(false)}
           >
-            <MaterialIcons
-              name="format-list-numbered"
-              size={getResponsiveSize(20)}
-              color={isDarkMode ? "#9d00d4" : "#9d00d4"}
-              style={{ marginRight: getResponsiveSize(12) }}
+            <Ionicons name="close" size={30} color="#ffffff" />
+          </TouchableOpacity>
+          {images[selectedImageIndex] && (
+            <Image
+              source={{ uri: images[selectedImageIndex] }}
+              style={{ width: "100%", height: "80%", resizeMode: "contain" }}
             />
-            <Text
-              style={{
-                color: isDarkMode ? "#ffffff" : "#000000",
-                fontSize: getResponsiveSize(9),
-                fontFamily: "Poppins_400Regular",
-              }}
-            >
-              Add Numbered List
-            </Text>
-          </TouchableOpacity>
-
-          {/* Bold Option */}
-          <TouchableOpacity
-            style={{
-              paddingVertical: getResponsiveSize(12),
-              paddingHorizontal: getResponsiveSize(12),
-              marginBottom: getResponsiveSize(8),
-              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-              borderRadius: 8,
-              flexDirection: "row",
-              alignItems: "center",
-            }}
-            onPress={applyBold}
-          >
-            <Text
-              style={{
-                color: isDarkMode ? "#9d00d4" : "#9d00d4",
-                fontSize: getResponsiveSize(14),
-                fontWeight: "bold",
-                marginRight: getResponsiveSize(12),
-              }}
-            >
-              B
-            </Text>
-            <Text
-              style={{
-                color: isDarkMode ? "#ffffff" : "#000000",
-                fontSize: getResponsiveSize(9),
-                fontFamily: "Poppins_400Regular",
-              }}
-            >
-              Bold
-            </Text>
-          </TouchableOpacity>
-
-          {/* Italic Option */}
-          <TouchableOpacity
-            style={{
-              paddingVertical: getResponsiveSize(12),
-              paddingHorizontal: getResponsiveSize(12),
-              marginBottom: getResponsiveSize(8),
-              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-              borderRadius: 8,
-              flexDirection: "row",
-              alignItems: "center",
-            }}
-            onPress={applyItalic}
-          >
-            <Text
-              style={{
-                color: isDarkMode ? "#9d00d4" : "#9d00d4",
-                fontSize: getResponsiveSize(14),
-                fontStyle: "italic",
-                marginRight: getResponsiveSize(12),
-              }}
-            >
-              I
-            </Text>
-            <Text
-              style={{
-                color: isDarkMode ? "#ffffff" : "#000000",
-                fontSize: getResponsiveSize(9),
-                fontFamily: "Poppins_400Regular",
-              }}
-            >
-              Italic
-            </Text>
-          </TouchableOpacity>
-
-          {/* Underline Option */}
-          <TouchableOpacity
-            style={{
-              paddingVertical: getResponsiveSize(12),
-              paddingHorizontal: getResponsiveSize(12),
-              marginBottom: getResponsiveSize(8),
-              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-              borderRadius: 8,
-              flexDirection: "row",
-              alignItems: "center",
-            }}
-            onPress={applyUnderline}
-          >
-            <Text
-              style={{
-                color: isDarkMode ? "#9d00d4" : "#9d00d4",
-                fontSize: getResponsiveSize(14),
-                textDecorationLine: "underline",
-                marginRight: getResponsiveSize(12),
-              }}
-            >
-              U
-            </Text>
-            <Text
-              style={{
-                color: isDarkMode ? "#ffffff" : "#000000",
-                fontSize: getResponsiveSize(9),
-                fontFamily: "Poppins_400Regular",
-              }}
-            >
-              Underline
-            </Text>
-          </TouchableOpacity>
-
-          {/* Color Options */}
-          <Text
-            style={{
-              color: isDarkMode ? "#ffffff" : "#000000",
-              fontSize: getResponsiveSize(9),
-              fontFamily: "Poppins_600SemiBold",
-              marginBottom: getResponsiveSize(8),
-              marginTop: getResponsiveSize(4),
-            }}
-          >
-            Color
-          </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-around",
-              marginBottom: getResponsiveSize(8),
-            }}
-          >
-            {["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F"].map((color) => (
-              <TouchableOpacity
-                key={color}
-                style={{
-                  width: getResponsiveSize(32),
-                  height: getResponsiveSize(32),
-                  borderRadius: 16,
-                  backgroundColor: color,
-                  borderWidth: 2,
-                  borderColor: isDarkMode ? "#444" : "#ddd",
-                }}
-                onPress={() => applyColor(color)}
-              />
-            ))}
-          </View>
-
-          {/* Close Button */}
-          <TouchableOpacity
-            style={{
-              paddingVertical: getResponsiveSize(12),
-              paddingHorizontal: getResponsiveSize(12),
-              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-              borderRadius: 8,
-              alignItems: "center",
-            }}
-            onPress={() => setShowFormatMenu(false)}
-          >
-            <Text
-              style={{
-                color: isDarkMode ? "#ffffff" : "#000000",
-                fontSize: getResponsiveSize(9),
-                fontFamily: "Poppins_400Regular",
-              }}
-            >
-              Close
-            </Text>
-          </TouchableOpacity>
+          )}
         </View>
-      )}
+      </Modal>
 
-      {/* Overlay to close menu */}
-      {showFormatMenu && (
-        <TouchableOpacity
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
-          onPress={() => setShowFormatMenu(false)}
-          activeOpacity={1}
-        />
-      )}
     </View>
   );
 }

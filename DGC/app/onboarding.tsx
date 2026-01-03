@@ -37,15 +37,15 @@ const slides: OnboardingSlide[] = [
     id: "2",
     image: require("@/assets/images/img2.png"),
     title: "Where",
-    subtitle: "Growth is Compulsory",
+    subtitle: "Growth is By Force",
     description:
       "Read the Sunday school teachings and understand easily from your devices",
   },
   {
     id: "3",
     image: require("@/assets/images/img3.png"),
-    title: "The Least of Us is as David",
-    subtitle: "Greatest among Us is as God",
+    title: "The Least of Us Shall Be Like David",
+    subtitle: " And The Greatest Of Us like God",
     description:
       "Read the Sunday school teachings and understand easily from your devices",
   },
@@ -176,7 +176,7 @@ export default function Onboarding() {
       >
         <Text
           style={{
-            fontSize: getResponsiveFontSize(24),
+            fontSize: getResponsiveFontSize(21),
             color: "#FFFFFF",
             marginBottom: 6,
             fontFamily: "PlayfairDisplay_400Regular_Italic",
@@ -186,7 +186,7 @@ export default function Onboarding() {
         </Text>
         <Text
           style={{
-            fontSize: getResponsiveFontSize(24),
+            fontSize: getResponsiveFontSize(20),
             color: "#FFFFFF",
             marginBottom: index === slides.length - 1 ? 10 : 14,
             lineHeight: getResponsiveFontSize(40),

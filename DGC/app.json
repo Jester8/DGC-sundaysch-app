@@ -31,7 +31,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/dgc.png",
+          "image": "./assets/images/dgcsplash.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#390054",
