@@ -1,3 +1,17 @@
+![Screenshot_20260107_101904_DGC-Discpleship](https://github.com/user-attachments/assets/8b51736d-12a0-4315-abda-cb93364b63b1)
+![Screenshot_20260107_101901_DGC-Discpleship](https://github.com/user-attachments/assets/bc2c3130-1d9f-40cd-af7e-6b5e080b9526)
+![Screenshot_20260107_101916_DGC-Discpleship](https://github.com/user-attachments/assets/e1987aa0-1bf5-4839-b850-c3d55e72f8af)
+![Screenshot_20260107_101907_DGC-Discpleship](https://github.com/user-attachments/assets/20c82953-64ee-4010-a917-fe4754a722e3)
+![Screenshot_20260107_101927_DGC-Discpleship](https://github.com/user-attachments/assets/592e3b89-7675-4e64-90f1-ab782b4514f0)
+![Screenshot_20260107_102017_DGC-Discpleship](https://github.com/user-attachments/assets/d849cece-beef-478c-b5d8-3e3368f86b70)
+![Screenshot_20260107_102014_DGC-Discpleship](https://github.com/user-attachments/assets/82345d7f-cf6a-4a91-b089-56b7132b7468)
+![Screenshot_20260107_102003_DGC-Discpleship](https://github.com/user-attachments/assets/f90b6ffc-a4b3-4edf-9c4f-c1c774dd3fe9)
+![Screenshot_20260107_101958_DGC-Discpleship](https://github.com/user-attachments/assets/213124ff-6e26-4938-bb5e-ea1b5ff863da)
+![Screenshot_20260107_101944_DGC-Discpleship](https://github.com/user-attachments/assets/3e3d5573-a4d1-4ed9-8db8-03ef1b8c9475)
+![Screenshot_20260107_101937_DGC-Discpleship](https://github.com/user-attachments/assets/96c144c7-b694-46d4-b80e-138e8f9b64ac)
+
+
+
 # Davidic Generation Church Sunday School App
 
 
@@ -10,6 +24,7 @@ A comprehensive Sunday School study  app built for the Davidic Generation Church
 - **Splash Screen** - Beautiful animated welcome screen with app branding
 - **Onboarding Flow** - Interactive tutorial for first-time users
 - **Home Dashboard** - Quick access to all study materials and features
+
 - **Monthly Study Manuals** - Organized Bible study outlines by month
 - **Progressive Unlock System** - Manuals unlock on a scheduled basis (Jan 4th start, every 4 days)
 - **Advanced Search** - Search across titles, themes, scriptures, and content
