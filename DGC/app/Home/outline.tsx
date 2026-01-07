@@ -73,189 +73,158 @@ const getResponsiveSize = (size: number): number => {
   return size;
 };
 
-// Helper function to parse date strings like "January 4", "January 11", etc.
-const parseManualDate = (monthName: string, dateString: string): Date | null => {
-  try {
-    const cleanDateString = dateString.replace(/(\d+)(st|nd|rd|th)/g, '$1');
-    const dateStr = `${monthName} ${cleanDateString} ${new Date().getFullYear()}`;
-    const date = new Date(dateStr);
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      // Try alternative parsing
-      const match = dateString.match(/\d+/);
-      if (match) {
-        const day = parseInt(match[0], 10);
-        const monthIndex = months.indexOf(monthName);
-        if (monthIndex !== -1 && day >= 1 && day <= 31) {
-          return new Date(new Date().getFullYear(), monthIndex, day);
-        }
-      }
-      return null;
-    }
-    
-    return date;
-  } catch (error) {
-    console.error("Error parsing date:", error);
-    return null;
-  }
-};
-
-// Function to check if a manual should be unlocked based on current date
-// Teacher Preview: Unlocks 4 days after the manual's date
-const isManualUnlocked = (month: string, dateString: string): boolean => {
-  console.log("Manual unlock check:", {
+// Main unlock function - ONLY Jan 4th unlocked, rest every 4 days after
+const isManualUnlocked = (month: string, dateString: string, order: number = 0): boolean => {
+  console.log("Unlock check:", {
     month: month,
     date: dateString,
-    isJanuary: month === "January",
-    dateString: dateString
+    order: order
   });
   
-  // If it's not January, always unlocked
-  if (month !== "January") {
-    return true;
+  // Get current date
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  
+  try {
+    // Check if this is January 4th specifically
+    const lowerDate = dateString.toLowerCase();
+    if (month === "January") {
+      // Check for January 4th in various formats
+      if (lowerDate.includes("4th") || lowerDate === "4" || 
+          lowerDate.includes("fourth") || dateString.includes("4")) {
+        console.log("✓ January 4th - Always unlocked");
+        return true;
+      }
+      
+      // Also check for numeric 4 in the date
+      const numbers = dateString.match(/\d+/g);
+      if (numbers) {
+        for (const num of numbers) {
+          if (parseInt(num, 10) === 4) {
+            console.log("✓ January 4th (found numeric 4) - Always unlocked");
+            return true;
+          }
+        }
+      }
+    }
+    
+    // For all other manuals, check 4-day unlock schedule starting from Jan 4th
+    
+    // First, we need to determine this manual's position in the sequence
+    // We'll use a combination of month, date, and order
+    
+    // Get month index (0 = January)
+    const monthIndex = months.indexOf(month);
+    if (monthIndex === -1) {
+      console.log("Invalid month:", month);
+      return false; // Lock invalid months
+    }
+    
+    // Try to extract day number from date string
+    let manualDay = 0;
+    const numbers = dateString.match(/\d+/g);
+    if (numbers && numbers.length > 0) {
+      manualDay = parseInt(numbers[0], 10);
+    }
+    
+    // If we couldn't extract day, use order as fallback
+    if (manualDay === 0 && order > 0) {
+      manualDay = order;
+    }
+    
+    if (manualDay === 0) {
+      console.log("Could not determine day for:", dateString);
+      return false; // Lock if we can't determine
+    }
+    
+    // Create date object for this manual
+    const manualDate = new Date(currentYear, monthIndex, manualDay);
+    
+    // Base unlock date: January 4th, 2024
+    const baseUnlockDate = new Date(currentYear, 0, 4, 0, 0, 0, 0); // Jan 4th
+    
+    // Calculate days difference from January 4th
+    const daysFromBase = Math.floor((manualDate.getTime() - baseUnlockDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Manuals before Jan 4th should be locked
+    if (daysFromBase < 0) {
+      console.log(`✗ Locking ${month} ${manualDay} (before Jan 4th)`);
+      return false;
+    }
+    
+    // Calculate which 4-day cycle this manual belongs to
+    // Since Jan 4th is cycle 0 (already handled above), Jan 5th-7th would be cycle 0 (locked)
+    // Jan 8th-11th would be cycle 1 (unlocks 4 days after Jan 4th)
+    // Jan 12th-15th would be cycle 2 (unlocks 8 days after Jan 4th)
+    const unlockCycle = Math.floor(daysFromBase / 4) + 1;
+    
+    // Calculate unlock date: Jan 4th + (unlockCycle * 4 days)
+    const unlockDate = new Date(baseUnlockDate);
+    unlockDate.setDate(baseUnlockDate.getDate() + (unlockCycle * 4));
+    
+    // For debugging
+    console.log("4-day unlock calculation:", {
+      month: month,
+      manualDay: manualDay,
+      manualDate: manualDate.toDateString(),
+      daysFromBase: daysFromBase,
+      unlockCycle: unlockCycle,
+      unlockDate: unlockDate.toDateString(),
+      currentDate: currentDate.toDateString(),
+      isUnlocked: currentDate >= unlockDate
+    });
+    
+    // Check if current date is on or after the unlock date
+    if (currentDate >= unlockDate) {
+      console.log(`✓ Unlocking ${month} ${manualDay} (unlocked on ${unlockDate.toDateString()})`);
+      return true;
+    } else {
+      console.log(`✗ Locking ${month} ${manualDay} (unlocks on ${unlockDate.toDateString()})`);
+      return false;
+    }
+    
+  } catch (error) {
+    console.error("Error in unlock logic:", error);
+    return false; // Lock on error
   }
-  
-  // Get the manual's date
-  const manualDate = parseManualDate(month, dateString);
-  if (!manualDate) {
-    console.log("Could not parse date, defaulting to locked:", dateString);
-    return false;
-  }
-  
-  // Get today's date at midnight
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  // Get the manual date at midnight
-  const manualDateAtMidnight = new Date(manualDate);
-  manualDateAtMidnight.setHours(0, 0, 0, 0);
-  
-  // Special rule: January 4th is always unlocked (for testing/legacy)
-  if (manualDateAtMidnight.getMonth() === 0 && manualDateAtMidnight.getDate() === 4) {
-    console.log("January 4th is always unlocked");
-    return true;
-  }
-  
-  // Teacher preview: Manual unlocks 4 DAYS AFTER the manual's date
-  // Example: January 11th manual unlocks on January 8th (4 days before January 11th)
-  const teacherPreviewDate = new Date(manualDateAtMidnight);
-  teacherPreviewDate.setDate(teacherPreviewDate.getDate() - 4); // 4 days before
-  
-  console.log("Teacher preview unlock check:", {
-    manualDate: manualDateAtMidnight.toDateString(),
-    teacherPreviewDate: teacherPreviewDate.toDateString(),
-    today: today.toDateString(),
-    isUnlockedForTeachers: today >= teacherPreviewDate
-  });
-  
-  // Unlock for teachers 4 days before the actual date
-  return today >= teacherPreviewDate;
 };
 
-// NEW: Function to get the next manual to unlock (for display)
-// Shows 7 days after previous date
-const getNextUnlockDate = (monthData: MonthData[]): string | null => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+// Function to get next unlock date for display
+const getNextUnlockDate = (): string | null => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
   
-  // Find January 4th date
-  const january4th = new Date(today.getFullYear(), 0, 4); // January 4th
+  // Base unlock date: January 4th
+  const baseUnlockDate = new Date(currentYear, 0, 4, 0, 0, 0, 0);
   
-  // Find all January dates
-  const januaryData = monthData.find(m => m.name === "January")?.data || [];
+  // Calculate days since Jan 4th
+  const daysSinceBase = Math.floor((currentDate.getTime() - baseUnlockDate.getTime()) / (1000 * 60 * 60 * 24));
   
-  // Sort January dates by their actual dates
-  const januaryDates: Date[] = [];
+  // Find the next 4-day cycle
+  let nextUnlockCycle = 0;
   
-  januaryData.forEach(item => {
-    const manualDate = parseManualDate(item.month, item.date);
-    if (manualDate) {
-      const manualDateAtMidnight = new Date(manualDate);
-      manualDateAtMidnight.setHours(0, 0, 0, 0);
-      januaryDates.push(manualDateAtMidnight);
-    }
-  });
-  
-  // Sort dates
-  januaryDates.sort((a, b) => a.getTime() - b.getTime());
-  
-  // Find the next date after January 4th that hasn't passed the teacher preview unlock
-  for (const date of januaryDates) {
-    if (date.getMonth() === 0 && date.getDate() === 4) {
-      continue; // Skip January 4th (already unlocked)
-    }
-    
-    const teacherPreviewDate = new Date(date);
-    teacherPreviewDate.setDate(teacherPreviewDate.getDate() - 4); // 4 days before
-    
-    if (today < teacherPreviewDate) {
-      // This manual hasn't unlocked yet for teachers
-      // Display will show 7 days after January 4th = January 11th
-      const displayDate = new Date(january4th);
-      displayDate.setDate(displayDate.getDate() + 7); // 7 days after January 4th
-      
-      return displayDate.toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric',
-        year: 'numeric'
-      });
-    }
+  if (daysSinceBase >= 0) {
+    // If we're past Jan 4th, find next cycle
+    nextUnlockCycle = Math.floor(daysSinceBase / 4) + 1;
+  } else {
+    // If we're before Jan 4th, first unlock is Jan 4th
+    return "January 4, " + currentYear;
   }
   
-  // If all manuals are unlocked or no January data
-  return null;
-};
-
-// NEW: Function to get the actual teacher preview date for display
-const getTeacherPreviewDate = (monthData: MonthData[]): string | null => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const nextUnlockDate = new Date(baseUnlockDate);
+  nextUnlockDate.setDate(baseUnlockDate.getDate() + (nextUnlockCycle * 4));
   
-  // Find all January dates
-  const januaryData = monthData.find(m => m.name === "January")?.data || [];
-  
-  // Sort January dates by their actual dates
-  const januaryDates: { date: Date, item: OutlineItem }[] = [];
-  
-  januaryData.forEach(item => {
-    const manualDate = parseManualDate(item.month, item.date);
-    if (manualDate) {
-      const manualDateAtMidnight = new Date(manualDate);
-      manualDateAtMidnight.setHours(0, 0, 0, 0);
-      januaryDates.push({ date: manualDateAtMidnight, item });
-    }
-  });
-  
-  // Sort dates
-  januaryDates.sort((a, b) => a.date.getTime() - b.date.getTime());
-  
-  // Find the next manual that will unlock for teachers
-  for (const { date, item } of januaryDates) {
-    if (date.getMonth() === 0 && date.getDate() === 4) {
-      continue; // Skip January 4th (already unlocked)
-    }
-    
-    const teacherPreviewDate = new Date(date);
-    teacherPreviewDate.setDate(teacherPreviewDate.getDate() - 4); // 4 days before
-    
-    if (today < teacherPreviewDate) {
-      // Found the next manual that will unlock
-      const teacherPreviewDisplay = teacherPreviewDate.toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric' 
-      });
-      
-      const actualDate = date.toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric' 
-      });
-      
-      return `${teacherPreviewDisplay} (for ${actualDate} manual)`;
-    }
+  // If next unlock date is today or in the past, find the next one
+  if (nextUnlockDate <= currentDate) {
+    nextUnlockCycle++;
+    nextUnlockDate.setDate(baseUnlockDate.getDate() + (nextUnlockCycle * 4));
   }
   
-  return null;
+  return nextUnlockDate.toLocaleDateString('en-US', { 
+    month: 'long', 
+    day: 'numeric',
+    year: 'numeric'
+  });
 };
 
 export default function Outline() {
@@ -266,8 +235,7 @@ export default function Outline() {
   const [monthsData, setMonthsData] = useState<MonthData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [nextDisplayDate, setNextDisplayDate] = useState<string | null>(null);
-  const [teacherPreviewDate, setTeacherPreviewDate] = useState<string | null>(null);
+  const [nextUnlockDate, setNextUnlockDate] = useState<string | null>(null);
   const { width } = useWindowDimensions();
 
   useEffect(() => {
@@ -275,13 +243,17 @@ export default function Outline() {
   }, []);
 
   useEffect(() => {
-    if (monthsData.length > 0) {
-      const displayDate = getNextUnlockDate(monthsData);
-      const previewDate = getTeacherPreviewDate(monthsData);
-      setNextDisplayDate(displayDate);
-      setTeacherPreviewDate(previewDate);
-    }
-  }, [monthsData]);
+    // Update next unlock date
+    const date = getNextUnlockDate();
+    setNextUnlockDate(date);
+    
+    const interval = setInterval(() => {
+      const newDate = getNextUnlockDate();
+      setNextUnlockDate(newDate);
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const saveToStorage = async (data: MonthData[]) => {
     try {
@@ -339,27 +311,23 @@ export default function Outline() {
         await saveToStorage(formattedMonths);
         setMonthsData(formattedMonths);
         
-        // Log January manuals for debugging
-        const januaryData = formattedMonths.find(m => m.name === "January")?.data || [];
-        console.log("=== ALL JANUARY MANUALS ===");
-        januaryData.forEach(item => {
-          const manualDate = parseManualDate(item.month, item.date);
-          if (manualDate) {
-            const teacherPreviewDate = new Date(manualDate);
-            teacherPreviewDate.setDate(teacherPreviewDate.getDate() - 4);
-            
-            const isUnlocked = isManualUnlocked(item.month, item.date);
-            console.log({
-              title: item.title,
-              date: item.date,
-              parsedDate: manualDate.toDateString(),
-              teacherPreviewDate: teacherPreviewDate.toDateString(),
-              isUnlocked: isUnlocked,
-              isJanuary4th: manualDate.getDate() === 4 && manualDate.getMonth() === 0
+        // Log unlock status for all manuals
+        console.log("=== UNLOCK STATUS ===");
+        formattedMonths.forEach(month => {
+          if (month.data.length > 0) {
+            console.log(`\n--- ${month.name} ---`);
+            month.data.forEach(item => {
+              const isUnlocked = isManualUnlocked(item.month, item.date, item.order);
+              console.log({
+                title: item.title,
+                date: item.date,
+                month: item.month,
+                isUnlocked: isUnlocked ? "UNLOCKED" : "LOCKED"
+              });
             });
           }
         });
-        console.log("=== END JANUARY MANUALS ===");
+        console.log("=== END UNLOCK STATUS ===");
       }
     } catch (error) {
       console.error("Error fetching months:", error);
@@ -383,17 +351,15 @@ export default function Outline() {
 
   const handleCardPress = useCallback(
     (item: OutlineItem) => {
-      const isUnlocked = isManualUnlocked(item.month, item.date);
+      const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
       console.log("Manual clicked:", {
         title: item.title,
         month: item.month,
         date: item.date,
-        isUnlocked: isUnlocked,
-        isJanuary4th: item.month === "January" && item.date.includes("4")
+        isUnlocked: isUnlocked
       });
       
       if (!isUnlocked) {
-        // Show locked message or modal here if needed
         console.log("Manual is locked");
         return;
       }
@@ -478,7 +444,7 @@ export default function Outline() {
     const img = item.coverBannerImg || item.imageUrl || "https://via.placeholder.com/200";
     const isSmallScreen = width < 380;
     const imageSize = isSmallScreen ? 60 : 80;
-    const isUnlocked = isManualUnlocked(item.month, item.date);
+    const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
 
     return (
       <TouchableOpacity
@@ -602,7 +568,8 @@ export default function Outline() {
         <Text style={[styles.subtitle, { color: isDarkMode ? "#FFF" : "#000" }]}>
           Manuals
         </Text>
-  {/* Unlock Schedule Information - UPDATED WITH DARK MODE */}
+        
+        {/* Unlock Schedule Information */}
         <View style={[
           styles.scheduleContainer,
           { 
@@ -616,16 +583,13 @@ export default function Outline() {
               Manual Release Schedule
             </Text>
             
-            {/* Next Display Date (7 days after Jan 4th) */}
-            {nextDisplayDate && (
-              <Text style={[styles.scheduleText, { color: isDarkMode ? "#CCCCCC" : "#666" }]}>
-                Next manual: <Text style={[styles.highlightText, { color: "#9d00d4" }]}>{nextDisplayDate}</Text>
-              </Text>
-            )}
+            <Text style={[styles.scheduleText, { color: isDarkMode ? "#CCCCCC" : "#666" }]}>
+              New manuals unlock every 7 days
+            </Text>
             
+           
             
-            
-            
+           
           </View>
         </View>
 
@@ -737,7 +701,7 @@ export default function Outline() {
 
                         const isSmallScreen = width < 380;
                         const imageSize = isSmallScreen ? 80 : 100;
-                        const isUnlocked = isManualUnlocked(item.month, item.date);
+                        const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
 
                         const uniqueKey = `${month.name}-${item._id || item.id}-${item.order}-${index}`;
 

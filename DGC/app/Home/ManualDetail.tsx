@@ -569,111 +569,138 @@ const BibleModal = ({ visible, scriptureReference, onClose, isDarkMode }: any) =
       fetchScripture();
     }
   }, [visible, scriptureReference, selectedVersion]);
+const fetchScripture = async () => {
+  setLoading(true);
+  setError(null);
+  setVerses([]);
 
-  const fetchScripture = async () => {
-    setLoading(true);
-    setError(null);
-    setVerses([]);
+  try {
+    let bookName = scriptureReference.book?.trim() || '';
+    let chap = scriptureReference.chapter?.toString().trim() || '';
+    let verseNum = scriptureReference.verse?.trim();
 
-    try {
-      let bookName = scriptureReference.book?.trim() || '';
-      let chap = scriptureReference.chapter?.toString().trim() || '';
-      let verseNum = scriptureReference.verse?.trim();
-
-      if (!bookName || !chap) {
-        throw new Error("Invalid scripture reference");
-      }
-
-      // Clean up the book name
-      bookName = bookName.replace(/\s*\(.*\)$/, '').trim();
-      
-      // Normalize the book name - remove spaces and lowercase
-      const normalizedBookName = bookName
-        .toLowerCase()
-        .replace(/\s+/g, '') // Remove all spaces
-        .replace(/^(\d)(st|nd|rd|th)/, '$1'); // Remove ordinal suffixes but keep the number
-      
-      // Try direct match first
-      let bookNum = BOOK_MAP[normalizedBookName];
-      
-      // If not found, try alternative mappings for numbered books
-      if (!bookNum) {
-        // For books like "1 Peter", try removing the number and space
-        if (normalizedBookName.startsWith('1')) {
-          const withoutOne = normalizedBookName.substring(1);
-          bookNum = BOOK_MAP[withoutOne];
-        }
-      }
-
-      if (!bookNum) {
-        throw new Error(`Book not found: ${bookName}`);
-      }
-
-      const chapter = parseInt(chap);
-      if (isNaN(chapter)) {
-        throw new Error("Invalid chapter number");
-      }
-
-      const url = `https://bolls.life/get-chapter/${selectedVersion}/${bookNum}/${chapter}/`;
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        throw new Error("No verses found");
-      }
-
-      const versesArray = Array.isArray(data) ? data : data.verses || [];
-      
-      const cleanText = (text: string) => {
-        let cleaned = text
-          .replace(/<br\s*\/?>/gi, ' ')
-          .replace(/<[^>]+>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&quot;/g, '"')
-          .replace(/&apos;/g, "'")
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&lt;\/sup&gt;/g, '')
-          .replace(/&lt;sup&gt;/g, '')
-          .replace(/<sup>[^<]*<\/sup>/gi, '')
-          .replace(/\s+/g, ' ')
-          .trim();
-        
-        return cleaned;
-      };
-
-      let versesData: Verse[] = versesArray.map((v: any) => ({
-        verse: v.verse,
-        text: cleanText(v.text),
-      }));
-
-      if (verseNum) {
-        if (verseNum.includes('-')) {
-          const [start, end] = verseNum.split('-').map(v => parseInt(v.trim()));
-          versesData = versesData.filter(v => v.verse >= start && v.verse <= end);
-        } else {
-          const singleVerse = parseInt(verseNum);
-          versesData = versesData.filter(v => v.verse === singleVerse);
-        }
-      }
-
-      if (versesData.length === 0) {
-        throw new Error("No verses found");
-      }
-
-      setVerses(versesData);
-    } catch (err: any) {
-      setError(`Unable to load scripture: ${err.message}`);
-    } finally {
-      setLoading(false);
+    if (!bookName || !chap) {
+      throw new Error("Invalid scripture reference");
     }
-  };
+
+    // Clean up the book name
+    bookName = bookName.replace(/\s*\(.*\)$/, '').trim();
+    
+    // Normalize the book name - remove spaces and lowercase
+    const normalizedBookName = bookName
+      .toLowerCase()
+      .replace(/\s+/g, '') // Remove all spaces
+      .replace(/^(\d)(st|nd|rd|th)/, '$1'); // Remove ordinal suffixes but keep the number
+    
+    // Try direct match first
+    let bookNum = BOOK_MAP[normalizedBookName];
+    
+    // If not found, try alternative mappings for numbered books
+    if (!bookNum) {
+      // For books like "1 Peter", try removing the number and space
+      if (normalizedBookName.startsWith('1')) {
+        const withoutOne = normalizedBookName.substring(1);
+        bookNum = BOOK_MAP[withoutOne];
+      }
+    }
+
+    if (!bookNum) {
+      throw new Error(`Book not found: ${bookName}`);
+    }
+
+    const chapter = parseInt(chap);
+    if (isNaN(chapter)) {
+      throw new Error("Invalid chapter number");
+    }
+
+    const url = `https://bolls.life/get-chapter/${selectedVersion}/${bookNum}/${chapter}/`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      throw new Error("No verses found");
+    }
+
+    const versesArray = Array.isArray(data) ? data : data.verses || [];
+    
+    const cleanText = (text: string) => {
+      let cleaned = text
+        .replace(/<br\s*\/?>/gi, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&lt;\/sup&gt;/g, '')
+        .replace(/&lt;sup&gt;/g, '')
+        .replace(/<sup>[^<]*<\/sup>/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      return cleaned;
+    };
+
+    let versesData: Verse[] = versesArray.map((v: any) => ({
+      verse: v.verse,
+      text: cleanText(v.text),
+    }));
+
+    if (verseNum) {
+      console.log("DEBUG - Filtering by verse:", verseNum);
+      
+      // Handle different dash types in verse ranges
+      if (verseNum.includes('–') || verseNum.includes('-') || verseNum.includes('—')) {
+        // Find which dash is used
+        const dashChar = verseNum.includes('–') ? '–' : 
+                        verseNum.includes('—') ? '—' : '-';
+        
+        const [startStr, endStr] = verseNum.split(dashChar).map(v => v.trim());
+        const start = parseInt(startStr);
+        const end = parseInt(endStr);
+        
+        console.log("DEBUG - Parsed range:", { start, end, dashChar });
+        
+        if (!isNaN(start) && !isNaN(end)) {
+          versesData = versesData.filter(v => v.verse >= start && v.verse <= end);
+          console.log("DEBUG - After range filtering, verses:", versesData.length);
+          
+          // Sort by verse number
+          versesData.sort((a, b) => a.verse - b.verse);
+        } else {
+          console.log("DEBUG - Invalid range numbers, showing all verses");
+        }
+      } else {
+        // Handle single verse
+        const singleVerse = parseInt(verseNum);
+        if (!isNaN(singleVerse)) {
+          versesData = versesData.filter(v => v.verse === singleVerse);
+          console.log("DEBUG - After single verse filtering, verses:", versesData.length);
+        } else {
+          console.log("DEBUG - Not a valid verse number, showing all verses");
+        }
+      }
+    }
+
+    if (versesData.length === 0) {
+      throw new Error("No verses found");
+    }
+
+    console.log("DEBUG - Final verses to display:", versesData.map(v => v.verse));
+    setVerses(versesData);
+  } catch (err: any) {
+    console.error("DEBUG - Error fetching scripture:", err);
+    setError(`Unable to load scripture: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const renderVerseItem = ({ item }: { item: Verse }) => (
     <View style={[styles.verseContainer, { marginBottom: isTablet ? 14 : 10 }]}>
@@ -1034,28 +1061,30 @@ export default function ManualDetail() {
               </View>
             )}
 
-            {/* For January 11th, show special recommended books or message */}
-            {isJanuary11Manual && (
-              <View style={{ marginBottom: 32 }}>
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 12 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textTransform: "uppercase", letterSpacing: 0.5 }}>January 11th Special Recommendations</Text>
-                </View>
-                <View style={[styles.bookCard, { backgroundColor: isDarkMode ? "#1a1a1a" : "#f9f9f9", borderColor: isDarkMode ? "#2a2a2a" : "#e8e8e8", marginBottom: 12 }]}>
-                  <View style={[styles.bookIconContainer, { backgroundColor: isDarkMode ? "#2a1a3a" : "#e8d5f2" }]}>
-                    <MaterialIcons name="star" size={28} color="#9d00d4" />
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 14 }}>
-                    <Text style={{ fontSize: 14 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", marginBottom: 4 }} numberOfLines={2}>
-                      The Power of Purpose
-                    </Text>
-                    <Text style={{ fontSize: 12 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#888888" : "#999999" }}>
-                      Special January 11th Edition
-                    </Text>
-                  </View>
-                  <MaterialIcons name="chevron-right" size={24} color="#9d00d4" />
-                </View>
-              </View>
-            )}
+             {/* DGC E-Library Section with 60px spacing */}
+                       <View style={{ marginBottom: 40 }}>
+                         <View style={{ backgroundColor: isDarkMode ? "#1a0f2e" : "#f3e5f5", borderRadius: 8, padding: 20, alignItems: "center", borderLeftWidth: 4, borderLeftColor: "#9d00d4" }}>
+                           <View style={{ width: 60, height: 60, backgroundColor: isDarkMode ? "#2a1a3a" : "#e8d5f2", borderRadius: 8, justifyContent: "center", alignItems: "center", marginBottom: 18 }}>
+                             <MaterialIcons name="menu-book" size={32} color="#9d00d4" />
+                           </View>
+                           <Text style={{ fontSize: 16 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textAlign: "center", marginBottom: 10 }}>
+                             DGC E-Library
+                           </Text>
+                           <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#b0b0b0" : "#666666", textAlign: "center", marginBottom: 18, lineHeight: 20 }}>
+                             Access the recommended books and other life-changing reads in the DGC E-library
+                           </Text>
+                           <TouchableOpacity 
+                             onPress={() => Linking.openURL("https://bit.ly/DGCE-LIBRARY")} 
+                             style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
+                           >
+                             <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_600SemiBold", color: "#9d00d4" }}>
+                               Visit DGC E-library
+                             </Text>
+                             <MaterialIcons name="arrow-forward" size={16} color="#9d00d4" />
+                           </TouchableOpacity>
+                         </View>
+                       </View>
+
 
             {manualData.feedbackLink && (
               <View style={{ marginBottom: 32, paddingBottom: 24 }}>

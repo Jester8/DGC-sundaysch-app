@@ -96,15 +96,133 @@ const BOOK_MAP: { [key: string]: number } = {
   "2timothy": 55, "2ndtimothy": 55, "iitimothy": 55, "2tim": 55, "2ti": 55,
   titus: 56, ti: 56, tit: 56,
   philemon: 57, phm: 57, ph: 57,
-  hebrews: 58, he: 58, heb: 58,
+  hebrews: 58, he: 58, heb: 58, "he.": 58,
   james: 59, jas: 59, jm: 59,
-  "1peter": 60, "1stpeter": 60, "ipeter": 60, "1pet": 60, "1pe": 60, "1p": 60,
-  "2peter": 61, "2ndpeter": 61, "iipeter": 61, "2pet": 61, "2pe": 61, "2p": 61,
+  "1peter": 60, "1stpeter": 60, "ipeter": 60, "1pet": 60, "1pe": 60, "1p": 60, "1pt": 60, "1pete": 60,
+  "2peter": 61, "2ndpeter": 61, "iipeter": 61, "2pet": 61, "2pe": 61, "2p": 61, "2pt": 61,
   "1john": 62, "1stjohn": 62, "ijohn": 62, "1jn": 62, "1j": 62,
   "2john": 63, "2ndjohn": 63, "iijohn": 63, "2jn": 63, "2j": 63,
   "3john": 64, "3rdjohn": 64, "iiijohn": 64, "3jn": 64, "3j": 64,
   jude: 65, ju: 65, jud: 65,
   revelation: 66, rev: 66, re: 66,
+};
+
+// Helper function to parse scripture references
+const parseScriptureReference = (scriptureText: string) => {
+  let text = scriptureText.trim();
+  
+  // Remove any trailing punctuation
+  text = text.replace(/[,;.!?]+$/, '');
+  
+  // Enhanced book list with better handling
+  const bookNames = [
+    '1 Chronicles', '2 Chronicles', '1 Corinthians', '2 Corinthians',
+    '1 John', '2 John', '3 John', '1 Kings', '2 Kings',
+    '1 Peter', '2 Peter', '1 Samuel', '2 Samuel',
+    '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy',
+    'Song of Solomon', 'Ecclesiastes', 'Lamentations',
+    'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
+    'Joshua', 'Judges', 'Ruth', 'Ezra', 'Nehemiah', 'Esther', 'Job',
+    'Psalm', 'Psalms', 'Proverbs', 'Isaiah', 'Jeremiah',
+    'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos', 'Obadiah',
+    'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah',
+    'Haggai', 'Zechariah', 'Malachi', 'Matthew', 'Mark',
+    'Luke', 'John', 'Acts', 'Romans', 'Galatians', 'Ephesians',
+    'Philippians', 'Colossians', 'Titus', 'Philemon',
+    'Hebrews', 'James', 'Jude', 'Revelation'
+  ];
+  
+  // Try to find which book this is with better spacing handling
+  let foundBook = '';
+  let remainingText = text;
+  
+  for (const book of bookNames) {
+    const lowerBook = book.toLowerCase();
+    const lowerText = text.toLowerCase();
+    
+    // Check multiple patterns for better matching
+    if (lowerText.startsWith(lowerBook) || 
+        lowerText.startsWith(lowerBook + ' ') ||
+        lowerText.replace(/\s+/g, '').startsWith(lowerBook.replace(/\s+/g, ''))) {
+      foundBook = book;
+      
+      // Find the actual book text in the original
+      const bookRegex = new RegExp(book.replace(/\s+/g, '\\s*'), 'i');
+      const bookMatch = text.match(bookRegex);
+      if (bookMatch) {
+        remainingText = text.substring(bookMatch[0].length).trim();
+      }
+      break;
+    }
+  }
+  
+  // Try common abbreviations
+  if (!foundBook) {
+    const abbrevMap: { [key: string]: string } = {
+      '1 pet': '1 Peter',
+      '1peter': '1 Peter',
+      '1 pet.': '1 Peter',
+      '1peter.': '1 Peter',
+      '1pe': '1 Peter',
+      '1pe.': '1 Peter',
+      '1pt': '1 Peter',
+      '1pt.': '1 Peter',
+      '1 p': '1 Peter',
+      '1p': '1 Peter',
+      '2 pet': '2 Peter',
+      '2peter': '2 Peter',
+      '2 pet.': '2 Peter',
+      '2peter.': '2 Peter',
+      '2pe': '2 Peter',
+      '2pe.': '2 Peter',
+      '2pt': '2 Peter',
+      '2pt.': '2 Peter',
+      '2 p': '2 Peter',
+      '2p': '2 Peter',
+      'heb': 'Hebrews',
+      'heb.': 'Hebrews',
+      'he': 'Hebrews',
+      'he.': 'Hebrews',
+    };
+    
+    const lowerText = text.toLowerCase();
+    for (const [abbrev, fullBook] of Object.entries(abbrevMap)) {
+      // Check if the text starts with the abbreviation
+      if (lowerText.startsWith(abbrev) || 
+          lowerText.startsWith(abbrev + ' ')) {
+        foundBook = fullBook;
+        remainingText = text.substring(abbrev.length).trim();
+        
+        // Remove any period that might be after an abbreviated book
+        if (remainingText.startsWith('.')) {
+          remainingText = remainingText.substring(1).trim();
+        }
+        break;
+      }
+    }
+  }
+  
+  if (!foundBook) {
+    return { book: '', chapter: '', verse: '' };
+  }
+  
+  // Parse chapter and verse with better spacing
+  let chapter = '';
+  let verse = '';
+  
+  // Handle various formats
+  const chapterVerseMatch = remainingText.match(/^[\s\.]*(\d+)(?::(\d+(?:[–\-—]\d+)?)?)?/);
+  
+  if (chapterVerseMatch) {
+    chapter = chapterVerseMatch[1];
+    verse = chapterVerseMatch[2] || '';
+  }
+  
+  return { 
+    book: foundBook, 
+    chapter: chapter, 
+    verse: verse 
+  };
 };
 
 const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, fontFamily, color, lineHeight, scale }: any) => {
@@ -127,27 +245,34 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
     '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude', 'Revelation'
   ];
 
-  // Sort books by length (longest first) to ensure proper matching
-  // This ensures "1 Peter" matches before "Peter" would match incorrectly
-  const sortedBooks = [...books].sort((a, b) => b.length - a.length);
+  // Add abbreviations with proper spacing
+  const bookVariations = [
+    ...books,
+    '1 Pet', '1Pet', '1 Pet.', '1Pet.', 
+    '2 Pet', '2Pet', '2 Pet.', '2Pet.',
+    'Heb', 'Heb.', 
+    '1 Jn', '1Jn', '1 Jn.', '1Jn.',
+    '2 Jn', '2Jn', '2 Jn.', '2Jn.',
+    '3 Jn', '3Jn', '3 Jn.', '3Jn.',
+  ];
+
+  // Sort by length (longest first) for proper matching
+  const sortedBooks = [...bookVariations].sort((a, b) => b.length - a.length);
   
-  // Create regex pattern that properly handles books with numbers
+  // Create regex pattern with better spacing handling
   const bookPattern = sortedBooks
     .map(book => {
-      // Escape special regex characters
       const escapedBook = book.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      // Replace spaces with \\s+ to match any whitespace
-      return escapedBook.replace(/\s+/g, '\\s+');
+      return escapedBook.replace(/\s+/g, '\\s*'); // Use \s* to handle optional spaces
     })
     .join('|');
   
-  // Improved scripture pattern that properly handles all formats
+  // Enhanced scripture pattern for better spacing
   const scripturePattern = new RegExp(
-    `\\b(${bookPattern})\\s+(\\d+(?::\\d+(?:[\\–\\-\\—]\\d+)?(?:,\\s*\\d+(?::\\d+(?:[\\–\\-\\—]\\d+)?)?)*)?)`,
+    `(${bookPattern})\\s*(\\d+(?::\\d+(?:[\\–\\-\\—]\\d+)?)?)`,
     'gi'
   );
 
-  // Process the text line by line
   const lines = text.split('\n').filter(line => line.trim() !== '');
   
   return (
@@ -155,14 +280,12 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
       {lines.map((line, lineIndex) => {
         const trimmedLine = line.trim();
         
-        // Check for "Old Testament:" or "New Testament:" headings
         const lowerLine = trimmedLine.toLowerCase();
         const isOldTestament = lowerLine.startsWith('old testament');
         const isNewTestament = lowerLine.startsWith('new testament');
         const isHeading = isOldTestament || isNewTestament;
         
         if (isHeading) {
-          // This is a heading line - just make the heading text bold
           return (
             <Text
               key={lineIndex}
@@ -171,8 +294,8 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
                 fontFamily: "Poppins_600SemiBold",
                 color: isDarkMode ? "#FFFFFF" : "#000000",
                 lineHeight: lineHeight * scale,
-                marginBottom: 8,
-                marginTop: lineIndex > 0 ? 12 : 0
+                marginBottom: 14,
+                marginTop: lineIndex > 0 ? 18 : 0
               }}
             >
               {trimmedLine}
@@ -180,24 +303,109 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
           );
         }
         
-        // Check if this line starts with a bullet point
         const isBulletPoint = trimmedLine.startsWith('-') || trimmedLine.startsWith('•');
         const contentToProcess = isBulletPoint ? trimmedLine.substring(1).trim() : trimmedLine;
         
-        // Process scripture references
+        // Check if this line contains notable examples
+        const lowerContent = contentToProcess.toLowerCase();
+        const hasNotableExamples = lowerContent.includes('notable examples') || 
+                                   lowerContent.includes('notable example');
+        
+        // Special handling for notable examples with 60px spacing
+        if (hasNotableExamples) {
+          return (
+            <View key={lineIndex} style={{ 
+              flexDirection: 'row', 
+              marginBottom: 16,
+              paddingLeft: isBulletPoint ? 12 : 0 
+            }}>
+              {isBulletPoint && (
+                <Text style={{ 
+                  fontSize: fontSize * scale,
+                  fontFamily,
+                  color,
+                  lineHeight: lineHeight * scale,
+                  marginRight: 10,
+                  marginTop: 2
+                }}>
+                  •
+                </Text>
+              )}
+              <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
+                <Text style={{ 
+                  fontSize: fontSize * scale,
+                  fontFamily,
+                  color,
+                  lineHeight: lineHeight * scale,
+                  fontWeight: '600',
+                  marginRight: 8
+                }}>
+                  Notable Examples:
+                </Text>
+                
+                {/* Parse and render each scripture reference with 60px spacing */}
+                {(() => {
+                  // Extract all scripture references from the line
+                  const scriptureRegex = /([1-3]?\s?[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+(?::\d+(?:[–\-—]\d+)?)?)/gi;
+                  const scriptures = [];
+                  let match;
+                  
+                  while ((match = scriptureRegex.exec(contentToProcess)) !== null) {
+                    scriptures.push({
+                      fullText: match[0],
+                      book: match[1],
+                      reference: match[2]
+                    });
+                  }
+                  
+                  // Render scriptures with 60px spacing
+                  return scriptures.map((scripture, idx) => {
+                    const { book, chapter, verse } = parseScriptureReference(scripture.fullText);
+                    
+                    return (
+                      <React.Fragment key={idx}>
+                        {idx > 0 && (
+                          <View style={{ width: 60 }} />
+                        )}
+                        <Text
+                          style={{
+                            color: isDarkMode ? '#d0d0d0' : '#333',
+                            fontWeight: "600",
+                            textDecorationLine: "underline",
+                            fontSize: fontSize * scale,
+                            fontFamily,
+                            lineHeight: lineHeight * scale
+                          }}
+                          onPress={() => {
+                            if (book && chapter) {
+                              onScripturePress(book, chapter, verse);
+                            }
+                          }}
+                        >
+                          {scripture.fullText}
+                        </Text>
+                      </React.Fragment>
+                    );
+                  });
+                })()}
+              </View>
+            </View>
+          );
+        }
+        
+        // Regular processing for other lines
         const parts: any[] = [];
         let lastIndex = 0;
         let match;
         
-        // Reset regex lastIndex
         scripturePattern.lastIndex = 0;
         
-        // First, let's find all scripture references
+        // Process the text to find scripture references
         while ((match = scripturePattern.exec(contentToProcess)) !== null) {
           const matchStart = match.index;
           const matchEnd = matchStart + match[0].length;
           
-          // Add text before the match
+          // Add text before the scripture reference
           if (matchStart > lastIndex) {
             parts.push({ 
               type: 'text', 
@@ -206,23 +414,16 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
           }
           
           // Add the scripture reference
-          const fullMatch = match[0];
-          const bookName = match[1];
-          
-          // For the content, we'll keep the original match
           parts.push({
             type: 'scripture',
-            content: fullMatch,
-            book: bookName,
-            // We'll parse chapter and verse when clicked
-            chapter: '', // Will parse on click
-            verse: '', // Will parse on click
+            content: match[0],
+            fullMatch: match[0],
           });
           
           lastIndex = matchEnd;
         }
         
-        // Add remaining text after last match
+        // Add remaining text
         if (lastIndex < contentToProcess.length) {
           parts.push({ 
             type: 'text', 
@@ -230,47 +431,12 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
           });
         }
         
-        // If no scripture references were found, render the whole line
-        if (parts.length === 0) {
-          return (
-            <View key={lineIndex} style={{ 
-              flexDirection: 'row', 
-              marginBottom: 8,
-              paddingLeft: isBulletPoint ? 8 : 0 
-            }}>
-              {isBulletPoint && (
-                <Text style={{ 
-                  fontSize: fontSize * scale,
-                  fontFamily,
-                  color,
-                  lineHeight: lineHeight * scale,
-                  marginRight: 8
-                }}>
-                  •
-                </Text>
-              )}
-              <Text
-                style={{
-                  fontSize: fontSize * scale,
-                  fontFamily,
-                  color,
-                  lineHeight: lineHeight * scale,
-                  flex: 1,
-                  flexWrap: 'wrap'
-                }}
-              >
-                {contentToProcess}
-              </Text>
-            </View>
-          );
-        }
-        
-        // Render the line with mixed content
+        // Render the line
         return (
           <View key={lineIndex} style={{ 
             flexDirection: 'row', 
-            marginBottom: 8,
-            paddingLeft: isBulletPoint ? 8 : 0 
+            marginBottom: 16,
+            paddingLeft: isBulletPoint ? 12 : 0 
           }}>
             {isBulletPoint && (
               <Text style={{ 
@@ -278,7 +444,8 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
                 fontFamily,
                 color,
                 lineHeight: lineHeight * scale,
-                marginRight: 8
+                marginRight: 10,
+                marginTop: 2
               }}>
                 •
               </Text>
@@ -295,24 +462,7 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
             >
               {parts.map((part, partIndex) => {
                 if (part.type === 'scripture') {
-                  // Parse the scripture reference to get book, chapter, verse
-                  const parseScripture = (scriptureText: string) => {
-                    // Match book name and numbers
-                    const scriptureMatch = scriptureText.match(/^(.+?)\s+(\d+(?::\d+(?:[–\-—]\d+)?)?)$/);
-                    if (!scriptureMatch) return { book: '', chapter: '', verse: '' };
-                    
-                    const book = scriptureMatch[1].trim();
-                    const numbers = scriptureMatch[2];
-                    
-                    if (numbers.includes(':')) {
-                      const [chapter, verse] = numbers.split(':');
-                      return { book, chapter, verse };
-                    } else {
-                      return { book, chapter: numbers, verse: '' };
-                    }
-                  };
-                  
-                  const { book, chapter, verse } = parseScripture(part.content);
+                  const { book, chapter, verse } = parseScriptureReference(part.fullMatch);
                   
                   return (
                     <Text
@@ -323,10 +473,13 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
                         textDecorationLine: "underline",
                         fontSize: fontSize * scale,
                         fontFamily,
-                        lineHeight: lineHeight * scale
+                        lineHeight: lineHeight * scale,
+                        marginRight: 4
                       }}
                       onPress={() => {
-                        onScripturePress(book, chapter, verse);
+                        if (book && chapter) {
+                          onScripturePress(book, chapter, verse);
+                        }
                       }}
                     >
                       {part.content}
@@ -334,7 +487,7 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
                   );
                 } else {
                   return (
-                    <Text key={partIndex}>
+                    <Text key={partIndex} style={{ marginRight: 0 }}>
                       {part.content}
                     </Text>
                   );
@@ -348,8 +501,7 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
   );
 };
 
-
-// Keep the original ScriptureText component for other sections
+// ScriptureText component for other sections
 const ScriptureText = ({ text, onScripturePress, isDarkMode, fontSize, fontFamily, color, lineHeight, scale }: any) => {
   if (!text) {
     return <Text style={{ fontSize: fontSize * scale, fontFamily, color, lineHeight: lineHeight * scale }}></Text>;
@@ -375,58 +527,40 @@ const ScriptureText = ({ text, onScripturePress, isDarkMode, fontSize, fontFamil
   // Sort books by length (longest first) for better matching
   const sortedBooks = [...books].sort((a, b) => b.length - a.length);
   
-  // Create regex pattern that properly handles books with numbers
+  // Create regex pattern that properly handles books with numbers and spacing
   const bookPattern = sortedBooks
     .map(book => {
       const escapedBook = book.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return escapedBook.replace(/\s+/g, '\\s+');
+      return escapedBook.replace(/\s+/g, '\\s*'); // Use \s* for optional spaces
     })
     .join('|');
   
-  const scripturePattern = new RegExp(`(${bookPattern})\\s+(\\d+(?::\\d+(?:[\\–\\-\\—]\\d+)?)?)`, 'gi');
+  const scripturePattern = new RegExp(`(${bookPattern})\\s*(\\d+(?::\\d+(?:[\\–\\-\\—]\\d+)?)?)`, 'gi');
 
   let lastIndex = 0;
   let match;
   
-  // Create a copy of the text with normalized dashes
-  const normalizedText = text.replace(/[–—]/g, '-');
-  
-  while ((match = scripturePattern.exec(normalizedText)) !== null) {    
-    // Extract the original text segment (with original dashes)
+  while ((match = scripturePattern.exec(text)) !== null) {
     const matchStart = match.index;
     const matchEnd = matchStart + match[0].length;
-    const originalMatch = text.substring(matchStart, matchEnd);
     
     if (matchStart > lastIndex) {
       parts.push({ type: 'text', content: text.substring(lastIndex, matchStart) });
     }
     
-    const bookName = match[1]?.trim() || '';
-    const reference = match[2] || '';
+    // Use the parseScriptureReference helper
+    const { book, chapter, verse } = parseScriptureReference(match[0]);
     
-    // Parse chapter and verse from the reference
-    let chapter = '';
-    let verse = '';
-    
-    if (reference.includes(':')) {
-      const partsRef = reference.split(':');
-      chapter = partsRef[0];
-      verse = partsRef[1];
-    } else {
-      // If no colon, it's just a chapter
-      chapter = reference;
-    }
-    
-    if (bookName && chapter) {
+    if (book && chapter) {
       parts.push({
         type: 'scripture',
-        content: originalMatch,
-        book: bookName,
+        content: match[0],
+        book: book,
         chapter: chapter,
         verse: verse,
       });
     } else {
-      parts.push({ type: 'text', content: originalMatch });
+      parts.push({ type: 'text', content: match[0] });
     }
     
     lastIndex = matchEnd;
@@ -452,7 +586,8 @@ const ScriptureText = ({ text, onScripturePress, isDarkMode, fontSize, fontFamil
             textDecorationLine: "underline",
             fontSize: fontSize * scale,
             fontFamily,
-            lineHeight: lineHeight * scale
+            lineHeight: lineHeight * scale,
+            marginRight: 2
           }}
           onPress={() => {
             onScripturePress(part.book, part.chapter, part.verse);
@@ -469,7 +604,8 @@ const ScriptureText = ({ text, onScripturePress, isDarkMode, fontSize, fontFamil
             fontSize: fontSize * scale, 
             fontFamily, 
             color, 
-            lineHeight: lineHeight * scale 
+            lineHeight: lineHeight * scale,
+            marginRight: 0
           }}
         >
           {part.content}
@@ -499,110 +635,194 @@ const BibleModal = ({ visible, scriptureReference, onClose, isDarkMode }: any) =
     }
   }, [visible, scriptureReference, selectedVersion]);
 
-  const fetchScripture = async () => {
-    setLoading(true);
-    setError(null);
-    setVerses([]);
+const fetchScripture = async () => {
+  setLoading(true);
+  setError(null);
+  setVerses([]);
 
-    try {
-      let bookName = scriptureReference.book?.trim() || '';
-      let chap = scriptureReference.chapter?.toString().trim() || '';
-      let verseNum = scriptureReference.verse?.trim();
+  try {
+    let bookName = scriptureReference.book?.trim() || '';
+    let chap = scriptureReference.chapter?.toString().trim() || '';
+    let verseNum = scriptureReference.verse?.trim();
 
-      if (!bookName || !chap) {
-        throw new Error("Invalid scripture reference");
-      }
+    console.log("DEBUG - Fetching scripture:", { bookName, chap, verseNum });
 
-      // Clean up the book name
-      bookName = bookName.replace(/\s*\(.*\)$/, '').trim();
-      
-      // Normalize the book name - remove spaces and lowercase
-      const normalizedBookName = bookName
-        .toLowerCase()
-        .replace(/\s+/g, '') // Remove all spaces
-        .replace(/^(\d)(st|nd|rd|th)/, '$1'); // Remove ordinal suffixes but keep the number
-      
-      // Try direct match first
-      let bookNum = BOOK_MAP[normalizedBookName];
-      
-      // If not found, try alternative mappings for numbered books
-      if (!bookNum) {
-        // For books like "1 Peter", try removing the number and space
-        if (normalizedBookName.startsWith('1')) {
-          const withoutOne = normalizedBookName.substring(1);
-          bookNum = BOOK_MAP[withoutOne];
-        }
-      }
-
-      if (!bookNum) {
-        throw new Error(`Book not found: ${bookName}`);
-      }
-
-      const chapter = parseInt(chap);
-      if (isNaN(chapter)) {
-        throw new Error("Invalid chapter number");
-      }
-
-      const url = `https://bolls.life/get-chapter/${selectedVersion}/${bookNum}/${chapter}/`;
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        throw new Error("No verses found");
-      }
-
-      const versesArray = Array.isArray(data) ? data : data.verses || [];
-      
-      const cleanText = (text: string) => {
-        let cleaned = text
-          .replace(/<br\s*\/?>/gi, ' ')
-          .replace(/<[^>]+>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&quot;/g, '"')
-          .replace(/&apos;/g, "'")
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&lt;\/sup&gt;/g, '')
-          .replace(/&lt;sup&gt;/g, '')
-          .replace(/<sup>[^<]*<\/sup>/gi, '')
-          .replace(/\s+/g, ' ')
-          .trim();
-        
-        return cleaned;
-      };
-
-      let versesData: Verse[] = versesArray.map((v: any) => ({
-        verse: v.verse,
-        text: cleanText(v.text),
-      }));
-
-      if (verseNum) {
-        if (verseNum.includes('-')) {
-          const [start, end] = verseNum.split('-').map(v => parseInt(v.trim()));
-          versesData = versesData.filter(v => v.verse >= start && v.verse <= end);
-        } else {
-          const singleVerse = parseInt(verseNum);
-          versesData = versesData.filter(v => v.verse === singleVerse);
-        }
-      }
-
-      if (versesData.length === 0) {
-        throw new Error("No verses found");
-      }
-
-      setVerses(versesData);
-    } catch (err: any) {
-      setError(`Unable to load scripture: ${err.message}`);
-    } finally {
-      setLoading(false);
+    if (!bookName || !chap) {
+      throw new Error("Invalid scripture reference");
     }
-  };
+
+    // Clean up the book name
+    bookName = bookName.replace(/\s*\(.*\)$/, '').trim();
+    console.log("DEBUG - Cleaned book name:", bookName);
+    
+    // Normalize the book name - remove spaces and lowercase
+    let normalizedBookName = bookName
+      .toLowerCase()
+      .replace(/\s+/g, '') // Remove all spaces
+      .replace(/^(\d)(st|nd|rd|th)/, '$1'); // Remove ordinal suffixes but keep the number
+    
+    console.log("DEBUG - Normalized book name (1):", normalizedBookName);
+    
+    // Try direct match first
+    let bookNum = BOOK_MAP[normalizedBookName];
+    
+    // If not found, try alternative mappings for numbered books
+    if (!bookNum) {
+      console.log("DEBUG - Direct match not found, trying alternatives...");
+      
+      // For "1 Peter" - try different formats
+      if (bookName.toLowerCase().includes('peter')) {
+        if (bookName.toLowerCase().startsWith('1')) {
+          // Try "1peter" format
+          bookNum = BOOK_MAP["1peter"];
+          console.log("DEBUG - Trying 1peter, found:", bookNum);
+          
+          if (!bookNum) {
+            // Try "1pet" format
+            bookNum = BOOK_MAP["1pet"];
+            console.log("DEBUG - Trying 1pet, found:", bookNum);
+          }
+          
+          if (!bookNum) {
+            // Try "1pe" format
+            bookNum = BOOK_MAP["1pe"];
+            console.log("DEBUG - Trying 1pe, found:", bookNum);
+          }
+        }
+      }
+      
+      if (!bookNum && bookName.toLowerCase().includes('hebrews')) {
+        bookNum = BOOK_MAP["hebrews"];
+        console.log("DEBUG - Trying hebrews, found:", bookNum);
+        
+        if (!bookNum) {
+          bookNum = BOOK_MAP["heb"];
+          console.log("DEBUG - Trying heb, found:", bookNum);
+        }
+        
+        if (!bookNum) {
+          bookNum = BOOK_MAP["he"];
+          console.log("DEBUG - Trying he, found:", bookNum);
+        }
+      }
+      
+      // Try without any normalization (just lowercase, no space removal)
+      if (!bookNum) {
+        const simpleNormalized = bookName.toLowerCase().replace(/\s+/g, '');
+        bookNum = BOOK_MAP[simpleNormalized];
+        console.log("DEBUG - Trying simple normalized:", simpleNormalized, "found:", bookNum);
+      }
+    }
+
+    if (!bookNum) {
+      console.log("DEBUG - Book not found. Available BOOK_MAP entries:");
+      Object.keys(BOOK_MAP).forEach(key => {
+        if (key.includes('peter') || key.includes('heb') || key.includes('he.') || 
+            (key.includes('1') && key.includes('peter')) || 
+            (key.includes('1') && key.includes('pet')) ||
+            (key.includes('1') && key.includes('pe')) ||
+            (key.includes('1') && key.includes('p'))) {
+          console.log(`  ${key}: ${BOOK_MAP[key]}`);
+        }
+      });
+      throw new Error(`Book not found: ${bookName} (normalized: ${normalizedBookName})`);
+    }
+
+    console.log("DEBUG - Found book number:", bookNum);
+
+    const chapter = parseInt(chap);
+    if (isNaN(chapter)) {
+      throw new Error("Invalid chapter number");
+    }
+
+    const url = `https://bolls.life/get-chapter/${selectedVersion}/${bookNum}/${chapter}/`;
+    console.log("DEBUG - Fetching URL:", url);
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("DEBUG - Response data type:", typeof data);
+
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      throw new Error("No verses found");
+    }
+
+    const versesArray = Array.isArray(data) ? data : data.verses || [];
+    console.log("DEBUG - Verses array length:", versesArray.length);
+    
+    const cleanText = (text: string) => {
+      let cleaned = text
+        .replace(/<br\s*\/?>/gi, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&lt;\/sup&gt;/g, '')
+        .replace(/&lt;sup&gt;/g, '')
+        .replace(/<sup>[^<]*<\/sup>/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      return cleaned;
+    };
+
+    let versesData: Verse[] = versesArray.map((v: any) => ({
+      verse: v.verse,
+      text: cleanText(v.text),
+    }));
+
+    console.log("DEBUG - Verses data created, length:", versesData.length);
+
+    if (verseNum) {
+      console.log("DEBUG - Filtering by verse:", verseNum);
+      // Fix: Handle different types of dashes and ranges properly
+      const dashRegex = /[–\-—]/g;
+      if (dashRegex.test(verseNum)) {
+        // Handle verse range (like "11–16", "11-16", "11—16")
+        const [startStr, endStr] = verseNum.split(dashRegex).map(v => v.trim());
+        const start = parseInt(startStr);
+        const end = parseInt(endStr);
+        
+        console.log("DEBUG - Parsed range:", { start, end });
+        
+        if (!isNaN(start) && !isNaN(end)) {
+          versesData = versesData.filter(v => v.verse >= start && v.verse <= end);
+          console.log("DEBUG - After range filtering, verses:", versesData.length);
+          
+          // Sort by verse number to ensure proper order
+          versesData.sort((a, b) => a.verse - b.verse);
+        } else {
+          console.log("DEBUG - Invalid range, showing all verses");
+        }
+      } else {
+        // Handle single verse
+        const singleVerse = parseInt(verseNum);
+        if (!isNaN(singleVerse)) {
+          versesData = versesData.filter(v => v.verse === singleVerse);
+          console.log("DEBUG - After single verse filtering, verses:", versesData.length);
+        }
+      }
+    }
+
+    if (versesData.length === 0) {
+      throw new Error("No verses found");
+    }
+
+    console.log("DEBUG - Final verses to display:", versesData.map(v => v.verse));
+    setVerses(versesData);
+  } catch (err: any) {
+    console.error("DEBUG - Error fetching scripture:", err);
+    setError(`Unable to load scripture: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const renderVerseItem = ({ item }: { item: Verse }) => (
     <View style={[styles.verseContainer, { marginBottom: isTablet ? 14 : 10 }]}>
@@ -743,6 +963,7 @@ export default function January4ManualDetail() {
   }, [scale]);
 
   const handleScripturePress = (book: string, chapter: string, verse?: string) => {
+    console.log("DEBUG - Scripture pressed:", { book, chapter, verse });
     setSelectedScripture({ book, chapter, verse });
     setShowBibleModal(true);
   };
@@ -905,6 +1126,30 @@ export default function January4ManualDetail() {
               </View>
             )}
 
+              {/* DGC E-Library Section with 60px spacing */}
+            <View style={{ marginBottom: 40 }}>
+              <View style={{ backgroundColor: isDarkMode ? "#1a0f2e" : "#f3e5f5", borderRadius: 8, padding: 20, alignItems: "center", borderLeftWidth: 4, borderLeftColor: "#9d00d4" }}>
+                <View style={{ width: 60, height: 60, backgroundColor: isDarkMode ? "#2a1a3a" : "#e8d5f2", borderRadius: 8, justifyContent: "center", alignItems: "center", marginBottom: 18 }}>
+                  <MaterialIcons name="menu-book" size={32} color="#9d00d4" />
+                </View>
+                <Text style={{ fontSize: 16 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textAlign: "center", marginBottom: 10 }}>
+                  DGC E-Library
+                </Text>
+                <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#b0b0b0" : "#666666", textAlign: "center", marginBottom: 18, lineHeight: 20 }}>
+                  Access the recommended books and other life-changing reads in the DGC E-library
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => Linking.openURL("https://bit.ly/DGCE-LIBRARY")} 
+                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
+                >
+                  <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_600SemiBold", color: "#9d00d4" }}>
+                    Visit DGC E-library
+                  </Text>
+                  <MaterialIcons name="arrow-forward" size={16} color="#9d00d4" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* Feedback Link - consistent with other manuals */}
             {manualData.feedbackLink && (
               <View style={{ marginBottom: 40, paddingBottom: 32 }}>
@@ -927,6 +1172,27 @@ export default function January4ManualDetail() {
                     </Text>
                     <MaterialIcons name="arrow-forward" size={16} color="#9d00d4" />
                   </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+          
+            
+            {/* Show recommended books if available */}
+            {manualData.recommendedBooks && manualData.recommendedBooks.length > 0 && (
+              <View style={{ marginBottom: 40 }}>
+                <View style={{ backgroundColor: isDarkMode ? "#1a0f2e" : "#f3e5f5", borderRadius: 8, padding: 16 }}>
+                  <Text style={{ fontSize: 12 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
+                    Recommended Books
+                  </Text>
+                  {manualData.recommendedBooks.map((book, index) => (
+                    <View key={index} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+                      <MaterialIcons name="book" size={16} color="#9d00d4" style={{ marginTop: 2, marginRight: 10 }} />
+                      <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#d0d0d0" : "#333333", flex: 1, lineHeight: 20 }}>
+                        {book}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
               </View>
             )}

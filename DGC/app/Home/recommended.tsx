@@ -136,42 +136,118 @@ interface RecommendedProps {
   isDarkMode?: boolean;
 }
 
-const isManualUnlocked = (month: string, dateString: string): boolean => {
+const isManualUnlocked = (month: string, dateString: string, order: number = 0): boolean => {
   console.log("Recommended unlock check:", {
     month: month,
     date: dateString,
-    isJanuary: month === "January",
+    order: order,
     dateString: dateString
   });
   
-  if (month === "January") {
-    try {
-      const lowerDate = dateString.toLowerCase();
-      
-      if (lowerDate.includes("4th") || lowerDate === "4") {
-        console.log("Unlocking January 4th:", dateString);
+  // Get current date
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  
+  try {
+    // Check if this is January 4th specifically
+    const lowerDate = dateString.toLowerCase();
+    if (month === "January") {
+      // Check for January 4th in various formats
+      if (lowerDate.includes("4th") || lowerDate === "4" || 
+          lowerDate.includes("fourth") || dateString.includes("4")) {
+        console.log("✓ January 4th - Always unlocked");
         return true;
       }
       
+      // Also check for numeric 4 in the date
       const numbers = dateString.match(/\d+/g);
       if (numbers) {
         for (const num of numbers) {
           if (parseInt(num, 10) === 4) {
-            console.log("Found date 4 in:", dateString);
+            console.log("✓ January 4th (found numeric 4) - Always unlocked");
             return true;
           }
         }
       }
-      
-      console.log("Locking January (not 4th):", dateString);
-      return false;
-    } catch (error) {
-      console.error("Error parsing date:", error);
+    }
+    
+    // For all other manuals, check 4-day unlock schedule starting from Jan 4th
+    
+    // Get month index (0 = January)
+    const monthIndex = ["January", "February", "March", "April", "May", "June", 
+                       "July", "August", "September", "October", "November", "December"].indexOf(month);
+    if (monthIndex === -1) {
+      console.log("Invalid month:", month);
+      return false; // Lock invalid months
+    }
+    
+    // Try to extract day number from date string
+    let manualDay = 0;
+    const numbers = dateString.match(/\d+/g);
+    if (numbers && numbers.length > 0) {
+      manualDay = parseInt(numbers[0], 10);
+    }
+    
+    // If we couldn't extract day, use order as fallback
+    if (manualDay === 0 && order > 0) {
+      manualDay = order;
+    }
+    
+    if (manualDay === 0) {
+      console.log("Could not determine day for:", dateString);
+      return false; // Lock if we can't determine
+    }
+    
+    // Create date object for this manual
+    const manualDate = new Date(currentYear, monthIndex, manualDay);
+    
+    // Base unlock date: January 4th, 2024
+    const baseUnlockDate = new Date(currentYear, 0, 4, 0, 0, 0, 0); // Jan 4th
+    
+    // Calculate days difference from January 4th
+    const daysFromBase = Math.floor((manualDate.getTime() - baseUnlockDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Manuals before Jan 4th should be locked
+    if (daysFromBase < 0) {
+      console.log(`✗ Locking ${month} ${manualDay} (before Jan 4th)`);
       return false;
     }
+    
+    // Calculate which 4-day cycle this manual belongs to
+    // Since Jan 4th is cycle 0 (already handled above), Jan 5th-7th would be cycle 0 (locked)
+    // Jan 8th-11th would be cycle 1 (unlocks 4 days after Jan 4th)
+    // Jan 12th-15th would be cycle 2 (unlocks 8 days after Jan 4th)
+    const unlockCycle = Math.floor(daysFromBase / 4) + 1;
+    
+    // Calculate unlock date: Jan 4th + (unlockCycle * 4 days)
+    const unlockDate = new Date(baseUnlockDate);
+    unlockDate.setDate(baseUnlockDate.getDate() + (unlockCycle * 4));
+    
+    // For debugging
+    console.log("4-day unlock calculation:", {
+      month: month,
+      manualDay: manualDay,
+      manualDate: manualDate.toDateString(),
+      daysFromBase: daysFromBase,
+      unlockCycle: unlockCycle,
+      unlockDate: unlockDate.toDateString(),
+      currentDate: currentDate.toDateString(),
+      isUnlocked: currentDate >= unlockDate
+    });
+    
+    // Check if current date is on or after the unlock date
+    if (currentDate >= unlockDate) {
+      console.log(`✓ Unlocking ${month} ${manualDay} (unlocked on ${unlockDate.toDateString()})`);
+      return true;
+    } else {
+      console.log(`✗ Locking ${month} ${manualDay} (unlocks on ${unlockDate.toDateString()})`);
+      return false;
+    }
+    
+  } catch (error) {
+    console.error("Error in unlock logic:", error);
+    return false; // Lock on error
   }
-  
-  return true;
 };
 
 export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedProps) {
@@ -307,6 +383,20 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
       // Take first 4 items for display
       const dataToShow = recData.data.length >= 4 ? recData.data.slice(0, 4) : recData.data;
       setRecommendedData(dataToShow);
+      
+      // Log unlock status for recommended manuals
+      console.log("=== RECOMMENDED UNLOCK STATUS ===");
+      dataToShow.forEach(item => {
+        const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
+        console.log({
+          title: item.title,
+          date: item.date,
+          month: item.month,
+          order: item.order,
+          isUnlocked: isUnlocked ? "UNLOCKED" : "LOCKED"
+        });
+      });
+      console.log("=== END RECOMMENDED UNLOCK STATUS ===");
     } else {
       if (!cachedData || cachedData.length === 0) {
         setError("No recommendations available");
@@ -394,11 +484,12 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
 
  const handleCardPress = useCallback(
   (item: ManualItem) => {
-    const isUnlocked = isManualUnlocked(item.month, item.date);
+    const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
     console.log("Recommended manual clicked:", {
       title: item.title,
       month: item.month,
       date: item.date,
+      order: item.order,
       isUnlocked: isUnlocked
     });
     
@@ -431,7 +522,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
 
   const handleContinueRead = useCallback(() => {
     if (lastReadManual) {
-      const isUnlocked = isManualUnlocked(lastReadManual.month, lastReadManual.date);
+      const isUnlocked = isManualUnlocked(lastReadManual.month, lastReadManual.date, lastReadManual.order || 0);
       if (!isUnlocked) {
         return;
       }
@@ -443,9 +534,8 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
     }
   }, [lastReadManual, router]);
 
- // Update the renderRecommendedItem function in Recommended component
-const renderRecommendedItem = ({ item }: { item: ManualItem }) => {
-  const isUnlocked = isManualUnlocked(item.month, item.date);
+ const renderRecommendedItem = ({ item }: { item: ManualItem }) => {
+  const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
   
   return (
     <TouchableOpacity
@@ -500,7 +590,6 @@ const renderRecommendedItem = ({ item }: { item: ManualItem }) => {
               />
             </BlurView>
           )}
-          {/* REMOVED: Special badge for January 4th */}
         </View>
       )}
 
