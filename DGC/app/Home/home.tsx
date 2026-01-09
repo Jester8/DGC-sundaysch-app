@@ -9,6 +9,7 @@ import {
   Text,
   Modal,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -21,15 +22,15 @@ import { useNavigation } from "./_navigationContext";
 interface BannerSlide {
   id: string;
   image: NodeRequire;
+  imageUrl?: string;
 }
 
-const bannerSlides: BannerSlide[] = [
-  { id: "1", image: require("@/assets/images/4th.png") },
-  { id: "2", image: require("@/assets/images/11th.png") },
-  { id: "3", image: require("@/assets/images/18th.png") },
-  { id: "4", image: require("@/assets/images/25th.png") },
-  { id: "5", image: require("@/assets/images/sign.png") },
+// Only keep sign.png as local fallback
+const STATIC_BANNER: BannerSlide[] = [
+  { id: "sign", image: require("@/assets/images/sign.png") },
 ];
+
+const API_BASE_URL = "https://dgc-backend.onrender.com";
 
 const BannerSkeleton = ({ width, height, isDarkMode, getResponsiveSize }: any) => (
   <View
@@ -62,6 +63,9 @@ export default function Home() {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [bannerLoading, setBannerLoading] = useState(true);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [allBanners, setAllBanners] = useState<BannerSlide[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const isLandscape = width > height;
 
@@ -78,10 +82,87 @@ export default function Home() {
     setIsDarkMode(!isDarkMode);
   };
 
+  // Get current month name
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return now.toLocaleString('default', { month: 'long' });
+  };
+
+ 
+  const fetchMonthlyBanners = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const currentMonth = getCurrentMonth();
+      console.log(`Fetching banners for month: ${currentMonth}`);
+      
+      // Fetch manuals for current month
+      const response = await fetch(`${API_BASE_URL}/api/manuals/month/${currentMonth.toLowerCase()}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch banners: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.message || 'API request failed');
+      }
+      
+      if (!result.data || result.data.length === 0) {
+        // No banners for this month - just show sign.png
+        console.log(`No banners found for ${currentMonth}, showing sign only`);
+        setAllBanners(STATIC_BANNER);
+        return;
+      }
+      
+      const manuals = result.data;
+      console.log(`Found ${manuals.length} manuals for ${currentMonth}`);
+      
+      // Create banners from manuals - only use manuals with imageUrl
+      const banners: BannerSlide[] = [];
+      
+      for (const manual of manuals) {
+        if (manual.imageUrl && manual.imageUrl.trim() !== '') {
+          banners.push({
+            id: manual._id || manual.id || `banner-${banners.length}`,
+            image: require("@/assets/images/sign.png"), // Use sign.png as fallback if imageUrl fails
+            imageUrl: manual.imageUrl,
+          });
+        }
+        
+        // Only take first 4 banners
+        if (banners.length >= 4) break;
+      }
+      
+      console.log(`Created ${banners.length} banners from API`);
+      
+      // Add sign.png as the last banner
+      const combinedBanners = [
+        ...banners,
+        ...STATIC_BANNER
+      ];
+      
+      setAllBanners(combinedBanners);
+      
+    } catch (error) {
+      console.error("Error fetching monthly banners:", error);
+      setError(error instanceof Error ? error.message : 'Failed to load banners');
+      // On error, just show sign.png
+      setAllBanners(STATIC_BANNER);
+    } finally {
+      setIsLoading(false);
+      setBannerLoading(false);
+    }
+  };
+
   // Auto-scroll banner
   useEffect(() => {
+    if (allBanners.length <= 1) return; // Don't auto-scroll if only one banner
+    
     const interval = setInterval(() => {
-      const nextIndex = (currentBannerIndex + 1) % bannerSlides.length;
+      const nextIndex = (currentBannerIndex + 1) % allBanners.length;
       flatListRef.current?.scrollToIndex({ 
         index: nextIndex, 
         animated: true 
@@ -89,7 +170,7 @@ export default function Home() {
       setCurrentBannerIndex(nextIndex);
     }, 5000);
     return () => clearInterval(interval);
-  }, [currentBannerIndex]);
+  }, [currentBannerIndex, allBanners.length]);
 
   // Handle scroll events to update indicator
   const handleScroll = (event: any) => {
@@ -116,6 +197,18 @@ export default function Home() {
     checkFirstLaunch();
   }, []);
 
+  // Fetch monthly banners on component mount
+  useEffect(() => {
+    fetchMonthlyBanners();
+    
+    // Refresh banners daily
+    const refreshInterval = setInterval(() => {
+      fetchMonthlyBanners();
+    }, 24 * 60 * 60 * 1000); // 24 hours
+    
+    return () => clearInterval(refreshInterval);
+  }, []);
+
   const renderBannerSlide = ({ item }: { item: BannerSlide }) => (
     <View
       style={{
@@ -134,14 +227,32 @@ export default function Home() {
           getResponsiveSize={getResponsiveSize}
         />
       )}
-      <Image
-        source={item.image}
-        style={{ width: "100%", height: "100%", resizeMode: "cover" }}
-        onLoadEnd={() => setBannerLoading(false)}
-      />
+      
+      {/* Render image from URL if available, otherwise use local image */}
+      {item.imageUrl ? (
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+          onLoadStart={() => setBannerLoading(true)}
+          onLoadEnd={() => setBannerLoading(false)}
+          onError={(error) => {
+            console.error("Error loading banner image:", error.nativeEvent.error);
+            // If URL fails, use local sign.png
+            setBannerLoading(false);
+          }}
+        />
+      ) : (
+        <Image
+          source={item.image}
+          style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+          onLoadEnd={() => setBannerLoading(false)}
+        />
+      )}
     </View>
   );
 
+
+  
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? "#000" : "#fff" }}>
       <Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
@@ -153,42 +264,117 @@ export default function Home() {
       >
         {/* Banner Section */}
         <View style={{ marginTop: getResponsiveSize(16), alignItems: "center" }}>
-          <FlatList
-            ref={flatListRef}
-            data={bannerSlides}
-            renderItem={renderBannerSlide}
-            keyExtractor={(item) => item.id}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-            getItemLayout={(data, index) => ({
-              length: width - getResponsiveSize(32) + getResponsiveSize(32),
-              offset: (width - getResponsiveSize(32) + getResponsiveSize(32)) * index,
-              index,
-            })}
-          />
-          
-          {/* White Indicator Dots */}
-          <View style={styles.indicatorContainer}>
-            {bannerSlides.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.indicatorDot,
-                  {
-                    backgroundColor: index === currentBannerIndex ? "#FFFFFF" : "rgba(255, 255, 255, 0.4)",
-                    width: index === currentBannerIndex ? getResponsiveSize(10) : getResponsiveSize(6),
-                    height: getResponsiveSize(3),
-                    borderRadius: getResponsiveSize(3),
-                    marginHorizontal: getResponsiveSize(4),
-                    marginTop: getResponsiveSize(-54),
-                  }
-                ]}
+          {error ? (
+            <View
+              style={{
+                width: width - getResponsiveSize(32),
+                height: bannerHeight,
+                borderRadius: getResponsiveSize(16),
+                overflow: "hidden",
+                marginHorizontal: getResponsiveSize(16),
+                backgroundColor: isDarkMode ? "#1a0f2e" : "#f3e5f5",
+                justifyContent: "center",
+                alignItems: "center",
+                borderWidth: 1,
+                borderColor: "#9d00d4",
+                padding: getResponsiveSize(20),
+              }}
+            >
+              <MaterialIcons name="error-outline" size={getResponsiveSize(32)} color="#9d00d4" />
+              <Text style={{ 
+                color: isDarkMode ? "#fff" : "#000",
+                fontSize: getResponsiveSize(14),
+                textAlign: "center",
+                marginTop: getResponsiveSize(12),
+                fontFamily: "Poppins_400Regular"
+              }}>
+                {error}
+              </Text>
+              <TouchableOpacity 
+                onPress={fetchMonthlyBanners}
+                style={{
+                  marginTop: getResponsiveSize(16),
+                  backgroundColor: "#9d00d4",
+                  paddingHorizontal: getResponsiveSize(16),
+                  paddingVertical: getResponsiveSize(8),
+                  borderRadius: getResponsiveSize(8),
+                }}
+              >
+                <Text style={{
+                  color: "#fff",
+                  fontSize: getResponsiveSize(12),
+                  fontFamily: "Poppins_600SemiBold"
+                }}>
+                  Retry
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : allBanners.length > 0 ? (
+            <>
+              <FlatList
+                ref={flatListRef}
+                data={allBanners}
+                renderItem={renderBannerSlide}
+                keyExtractor={(item) => item.id}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+                getItemLayout={(data, index) => ({
+                  length: width - getResponsiveSize(32) + getResponsiveSize(32),
+                  offset: (width - getResponsiveSize(32) + getResponsiveSize(32)) * index,
+                  index,
+                })}
               />
-            ))}
-          </View>
+              
+              {/* White Indicator Dots - only show if more than 1 banner */}
+              {allBanners.length > 1 && (
+                <View style={styles.indicatorContainer}>
+                  {allBanners.map((_, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.indicatorDot,
+                        {
+                          backgroundColor: index === currentBannerIndex ? "#FFFFFF" : "rgba(255, 255, 255, 0.4)",
+                          width: index === currentBannerIndex ? getResponsiveSize(10) : getResponsiveSize(6),
+                          height: getResponsiveSize(3),
+                          borderRadius: getResponsiveSize(3),
+                          marginHorizontal: getResponsiveSize(4),
+                          marginTop: getResponsiveSize(-54),
+                        }
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
+          ) : (
+            // No banners available
+            <View
+              style={{
+                width: width - getResponsiveSize(32),
+                height: bannerHeight,
+                borderRadius: getResponsiveSize(16),
+                overflow: "hidden",
+                marginHorizontal: getResponsiveSize(16),
+                backgroundColor: isDarkMode ? "#1a1a1a" : "#f0f0f0",
+                justifyContent: "center",
+                alignItems: "center",
+                borderWidth: 1,
+                borderColor: isDarkMode ? "#333" : "#e0e0e0",
+                borderStyle: 'dashed',
+              }}
+            >
+              <Image
+                source={require("@/assets/images/sign.png")}
+                style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+              />
+            </View>
+          )}
+          
+         
         </View>
 
         <View style={{ paddingHorizontal: getResponsiveSize(16) }}>

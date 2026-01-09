@@ -73,7 +73,20 @@ const getResponsiveSize = (size: number): number => {
   return size;
 };
 
-// Main unlock function - ONLY Jan 4th unlocked, rest every 4 days after
+// Assign global order across ALL months
+const assignGlobalOrderToManuals = (monthsData: MonthData[]): MonthData[] => {
+  let globalOrder = 1;
+  
+  return monthsData.map((month) => ({
+    ...month,
+    data: month.data.map((manual) => ({
+      ...manual,
+      order: globalOrder++,
+    })),
+  }));
+};
+
+// Main unlock function - Based on manual ORDER, not date
 const isManualUnlocked = (month: string, dateString: string, order: number = 0): boolean => {
   console.log("Unlock check:", {
     month: month,
@@ -86,89 +99,31 @@ const isManualUnlocked = (month: string, dateString: string, order: number = 0):
   const currentYear = currentDate.getFullYear();
   
   try {
-    // Check if this is January 4th specifically
-    const lowerDate = dateString.toLowerCase();
-    if (month === "January") {
-      // Check for January 4th in various formats
-      if (lowerDate.includes("4th") || lowerDate === "4" || 
-          lowerDate.includes("fourth") || dateString.includes("4")) {
-        console.log("✓ January 4th - Always unlocked");
-        return true;
-      }
-      
-      // Also check for numeric 4 in the date
-      const numbers = dateString.match(/\d+/g);
-      if (numbers) {
-        for (const num of numbers) {
-          if (parseInt(num, 10) === 4) {
-            console.log("✓ January 4th (found numeric 4) - Always unlocked");
-            return true;
-          }
-        }
-      }
+    // Jan 4th (order 0 or 1) is always unlocked
+    if (month === "January" && (order === 0 || order === 1)) {
+      console.log("✓ January 4th (order 0/1) - Always unlocked");
+      return true;
     }
     
-    // For all other manuals, check 4-day unlock schedule starting from Jan 4th
+    // Base unlock date: January 4th
+    const baseUnlockDate = new Date(currentYear, 0, 4, 0, 0, 0, 0);
     
-    // First, we need to determine this manual's position in the sequence
-    // We'll use a combination of month, date, and order
+    // Calculate unlock date based on ORDER
+    // Order 0/1 = Jan 4 (unlocks immediately)
+    // Order 2 = Jan 8 (4 days after Jan 4)
+    // Order 3 = Jan 12 (8 days after Jan 4)
+    // Order 4 = Jan 16 (12 days after Jan 4)
+    // Order 5 = Jan 20 (16 days after Jan 4)
+    // Formula: Jan 4 + ((order - 1) * 4 days)
     
-    // Get month index (0 = January)
-    const monthIndex = months.indexOf(month);
-    if (monthIndex === -1) {
-      console.log("Invalid month:", month);
-      return false; // Lock invalid months
-    }
-    
-    // Try to extract day number from date string
-    let manualDay = 0;
-    const numbers = dateString.match(/\d+/g);
-    if (numbers && numbers.length > 0) {
-      manualDay = parseInt(numbers[0], 10);
-    }
-    
-    // If we couldn't extract day, use order as fallback
-    if (manualDay === 0 && order > 0) {
-      manualDay = order;
-    }
-    
-    if (manualDay === 0) {
-      console.log("Could not determine day for:", dateString);
-      return false; // Lock if we can't determine
-    }
-    
-    // Create date object for this manual
-    const manualDate = new Date(currentYear, monthIndex, manualDay);
-    
-    // Base unlock date: January 4th, 2024
-    const baseUnlockDate = new Date(currentYear, 0, 4, 0, 0, 0, 0); // Jan 4th
-    
-    // Calculate days difference from January 4th
-    const daysFromBase = Math.floor((manualDate.getTime() - baseUnlockDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    // Manuals before Jan 4th should be locked
-    if (daysFromBase < 0) {
-      console.log(`✗ Locking ${month} ${manualDay} (before Jan 4th)`);
-      return false;
-    }
-    
-    // Calculate which 4-day cycle this manual belongs to
-    // Since Jan 4th is cycle 0 (already handled above), Jan 5th-7th would be cycle 0 (locked)
-    // Jan 8th-11th would be cycle 1 (unlocks 4 days after Jan 4th)
-    // Jan 12th-15th would be cycle 2 (unlocks 8 days after Jan 4th)
-    const unlockCycle = Math.floor(daysFromBase / 4) + 1;
-    
-    // Calculate unlock date: Jan 4th + (unlockCycle * 4 days)
+    const daysToAdd = (order - 1) * 4;
     const unlockDate = new Date(baseUnlockDate);
-    unlockDate.setDate(baseUnlockDate.getDate() + (unlockCycle * 4));
+    unlockDate.setDate(baseUnlockDate.getDate() + daysToAdd);
     
-    // For debugging
-    console.log("4-day unlock calculation:", {
+    console.log("Order-based unlock calculation:", {
       month: month,
-      manualDay: manualDay,
-      manualDate: manualDate.toDateString(),
-      daysFromBase: daysFromBase,
-      unlockCycle: unlockCycle,
+      order: order,
+      daysToAdd: daysToAdd,
       unlockDate: unlockDate.toDateString(),
       currentDate: currentDate.toDateString(),
       isUnlocked: currentDate >= unlockDate
@@ -176,16 +131,16 @@ const isManualUnlocked = (month: string, dateString: string, order: number = 0):
     
     // Check if current date is on or after the unlock date
     if (currentDate >= unlockDate) {
-      console.log(`✓ Unlocking ${month} ${manualDay} (unlocked on ${unlockDate.toDateString()})`);
+      console.log(`✓ Unlocking order ${order} (unlocked on ${unlockDate.toDateString()})`);
       return true;
     } else {
-      console.log(`✗ Locking ${month} ${manualDay} (unlocks on ${unlockDate.toDateString()})`);
+      console.log(`✗ Locking order ${order} (unlocks on ${unlockDate.toDateString()})`);
       return false;
     }
     
   } catch (error) {
     console.error("Error in unlock logic:", error);
-    return false; // Lock on error
+    return false;
   }
 };
 
@@ -286,7 +241,8 @@ export default function Outline() {
 
       const cachedData = await loadFromStorage();
       if (cachedData && cachedData.length > 0) {
-        setMonthsData(cachedData);
+        const dataWithGlobalOrder = assignGlobalOrderToManuals(cachedData);
+        setMonthsData(dataWithGlobalOrder);
       }
 
       const response = await fetch(`${API_BASE_URL}/api/manuals/all`, {
@@ -308,12 +264,15 @@ export default function Outline() {
           data: data.data[month] || [],
         }));
 
-        await saveToStorage(formattedMonths);
-        setMonthsData(formattedMonths);
+        // Assign global order across all months
+        const dataWithGlobalOrder = assignGlobalOrderToManuals(formattedMonths);
+
+        await saveToStorage(dataWithGlobalOrder);
+        setMonthsData(dataWithGlobalOrder);
         
         // Log unlock status for all manuals
         console.log("=== UNLOCK STATUS ===");
-        formattedMonths.forEach(month => {
+        dataWithGlobalOrder.forEach(month => {
           if (month.data.length > 0) {
             console.log(`\n--- ${month.name} ---`);
             month.data.forEach(item => {
@@ -322,6 +281,7 @@ export default function Outline() {
                 title: item.title,
                 date: item.date,
                 month: item.month,
+                order: item.order,
                 isUnlocked: isUnlocked ? "UNLOCKED" : "LOCKED"
               });
             });

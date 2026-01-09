@@ -8,6 +8,9 @@
     "scheme": "dgc",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "updates": {
+      "url": "https://u.expo.dev/3904628e-c941-4a45-a724-8f155676c790"
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -52,6 +55,9 @@
       "eas": {
         "projectId": "3904628e-c941-4a45-a724-8f155676c790"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
