@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   translationSection: {
     paddingVertical: 16,
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontWeight: '600',
-    fontFamily: 'Poppins_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   translationBtn: {
     borderRadius: 24,
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
   },
   translationBtnText: {
     fontWeight: '600',
-    fontFamily: 'Poppins_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   backButtonContainer: {
     borderBottomWidth: 1,
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontWeight: '600',
-    fontFamily: 'Poppins_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   contentContainer: {
     flex: 1,
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontWeight: '700',
     color: '#9d00d4',
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   testamentGrid: {
     flexDirection: 'column',
@@ -751,11 +751,11 @@ const styles = StyleSheet.create({
   testamentCardText: {
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   testamentCardSubtext: {
     color: 'rgba(255,255,255,0.8)',
-    fontFamily: 'Poppins_400Regular',
+    fontFamily: 'Manrope_400Regular',
     marginTop: 8,
   },
   listContainer: {
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
   },
   listItemText: {
     fontWeight: '500',
-    fontFamily: 'Poppins_500Medium',
+    fontFamily: 'Manrope_500Medium',
     flex: 1,
   },
   chapterBtn: {
@@ -792,7 +792,7 @@ const styles = StyleSheet.create({
   chapterBtnText: {
     color: '#fff',
     fontWeight: '600',
-    fontFamily: 'Poppins_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   loadingContainer: {
     flex: 1,
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontFamily: 'Poppins_400Regular',
+    fontFamily: 'Manrope_400Regular',
   },
   errorContainer: {
     padding: 14,
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontFamily: 'Poppins_400Regular',
+    fontFamily: 'Manrope_400Regular',
     flex: 1,
   },
   scriptureContainer: {
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
   passageRef: {
     fontWeight: '700',
     color: '#9d00d4',
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: 'Manrope_700Bold',
     flex: 1,
   },
   translationTagContainer: {
@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
-    fontFamily: 'Poppins_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   verseContainer: {
     flexDirection: 'row',
@@ -861,10 +861,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#9d00d4',
     marginTop: 2,
-    fontFamily: 'Poppins_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   verseText: {
     flex: 1,
-    fontFamily: 'Poppins_400Regular',
+    fontFamily: 'Manrope_400Regular',
   },
 });

@@ -14,6 +14,9 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "./_navigationContext";
 
 const folderDarkPng = require("../../assets/images/folder-dark.png");
+const ACCENT = "#9d00d4";
+const CARD_ACCENTS_LIGHT = ["#f3e5fb", "#e8f0fe", "#fdece9", "#eafaf0"];
+const CARD_ACCENTS_DARK = ["#241a2e", "#1a2233", "#2b1c1a", "#16261e"];
 
 interface NoteItem {
   id: string;
@@ -178,7 +181,7 @@ export default function Note() {
 
   const renderNoteCard = ({ item, index }: { item: NoteItem; index: number }) => {
     const isLastInRow = (index + 1) % numColumns === 0;
-    const isLastRow = index >= notesData.length - (notesData.length % numColumns);
+    const accents = isDarkMode ? CARD_ACCENTS_DARK : CARD_ACCENTS_LIGHT;
 
     return (
       <View
@@ -196,18 +199,24 @@ export default function Note() {
           style={{
             width: "100%",
             height: "100%",
-            backgroundColor: isDarkMode ? "#242424" : "#f5f5f5",
+            backgroundColor: accents[index % accents.length],
             borderRadius: getResponsiveSize(16),
             padding: getResponsiveSize(14),
             justifyContent: "flex-end",
           }}
         >
+          <MaterialIcons
+            name="description"
+            size={getResponsiveSize(isTablet ? 13 : 15)}
+            color={ACCENT}
+            style={{ position: "absolute", top: getResponsiveSize(12), left: getResponsiveSize(14) }}
+          />
           <Text
             numberOfLines={3}
             style={{
               fontSize: cardTitleFontSize,
-              fontFamily: "Poppins_600SemiBold",
-              color: isDarkMode ? "#ffffff" : "#000000",
+              fontFamily: "Manrope_700Bold",
+              color: isDarkMode ? "#f5f5f5" : "#1a1a1a",
               lineHeight: cardTitleFontSize * 1.3,
             }}
           >
@@ -216,8 +225,8 @@ export default function Note() {
           <Text
             style={{
               fontSize: dateFontSize,
-              fontFamily: "Poppins_400Regular",
-              color: isDarkMode ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.6)",
+              fontFamily: "Manrope_500Medium",
+              color: isDarkMode ? "#9a9a9a" : "#777777",
               marginTop: getResponsiveSize(6),
             }}
           >
@@ -232,15 +241,13 @@ export default function Note() {
             position: "absolute",
             top: getResponsiveSize(6),
             right: getResponsiveSize(6),
-            backgroundColor: isDarkMode ? "rgba(0, 0, 0, 0.6)" : "rgba(255, 255, 255, 0.8)",
+            backgroundColor: isDarkMode ? "rgba(0, 0, 0, 0.55)" : "rgba(255, 255, 255, 0.85)",
             borderRadius: getResponsiveSize(20),
             padding: getResponsiveSize(5),
-            borderWidth: 1,
-            borderColor: isDarkMode ? "#444" : "#ddd",
           }}
         >
           <MaterialIcons
-            name="delete"
+            name="delete-outline"
             size={getResponsiveSize(isTablet ? 12 : 14)}
             color={isDarkMode ? "#ffffff" : "#ff4444"}
           />
@@ -261,10 +268,11 @@ export default function Note() {
         style={{
           width: cardWidth,
           height: cardHeight,
-          backgroundColor: "transparent",
+          backgroundColor: isDarkMode ? "rgba(157,0,212,0.08)" : "rgba(157,0,212,0.04)",
           borderRadius: getResponsiveSize(16),
-          borderWidth: 0.7,
-          borderColor: isDarkMode ? "#333333" : "#000000ff",
+          borderWidth: 1.2,
+          borderStyle: "dashed",
+          borderColor: ACCENT,
           padding: getResponsiveSize(14),
           justifyContent: "center",
           alignItems: "center",
@@ -277,24 +285,24 @@ export default function Note() {
             <Image
               source={require("../../assets/images/folder-light.png")}
               style={{
-                width: getResponsiveSize(isTablet ? 28 : 32),
-                height: getResponsiveSize(isTablet ? 28 : 32),
+                width: getResponsiveSize(isTablet ? 26 : 30),
+                height: getResponsiveSize(isTablet ? 26 : 30),
               }}
             />
           ) : (
             <Image
               source={folderDarkPng}
               style={{
-                width: getResponsiveSize(isTablet ? 28 : 32),
-                height: getResponsiveSize(isTablet ? 28 : 32),
+                width: getResponsiveSize(isTablet ? 26 : 30),
+                height: getResponsiveSize(isTablet ? 26 : 30),
               }}
             />
           )}
           <Text
             style={{
               fontSize: addNoteFontSize,
-              fontFamily: "Poppins_500Medium",
-              color: isDarkMode ? "#b0b0b0" : "#666666",
+              fontFamily: "Manrope_600SemiBold",
+              color: ACCENT,
               marginTop: getResponsiveSize(8),
               textAlign: "center",
             }}
@@ -328,22 +336,20 @@ export default function Note() {
       >
         <Text
           style={{
-            fontSize: headerFontSize,
-            fontFamily: "Poppins_600SemiBold",
+            fontSize: headerFontSize + 3,
+            fontFamily: "Manrope_800ExtraBold",
             color: isDarkMode ? "#ffffff" : "#000000",
-            marginLeft: getResponsiveSize(15),
           }}
         >
           Your Notes
         </Text>
         {notesData.length > 0 && (
-          <TouchableOpacity activeOpacity={0.7}>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/Home/noted")}>
             <Text
               style={{
                 fontSize: seeAllFontSize,
-                fontFamily: "Poppins_500Medium",
-                color: isDarkMode ? "#ffffffff" : "#000000",
-                textDecorationLine: "underline",
+                fontFamily: "Manrope_600SemiBold",
+                color: ACCENT,
               }}
             >
               See all
@@ -359,7 +365,7 @@ export default function Note() {
             style={{
               color: isDarkMode ? "#ffffff" : "#000000",
               fontSize: cardTitleFontSize,
-              fontFamily: "Poppins_400Regular",
+              fontFamily: "Manrope_400Regular",
             }}
           >
             Loading notes...

@@ -257,10 +257,11 @@ export default function Home() {
     <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? "#000" : "#fff" }}>
       <Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
 
-      <ScrollView 
+      <ScrollView
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
       >
         {/* Banner Section */}
         <View style={{ marginTop: getResponsiveSize(16), alignItems: "center" }}>
@@ -286,7 +287,7 @@ export default function Home() {
                 fontSize: getResponsiveSize(14),
                 textAlign: "center",
                 marginTop: getResponsiveSize(12),
-                fontFamily: "Poppins_400Regular"
+                fontFamily: "Manrope_400Regular"
               }}>
                 {error}
               </Text>
@@ -303,7 +304,7 @@ export default function Home() {
                 <Text style={{
                   color: "#fff",
                   fontSize: getResponsiveSize(12),
-                  fontFamily: "Poppins_600SemiBold"
+                  fontFamily: "Manrope_600SemiBold"
                 }}>
                   Retry
                 </Text>

@@ -67,12 +67,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 4,
-    fontFamily: "Poppins_600SemiBold",
+    fontFamily: "Manrope_600SemiBold",
   },
   cardPassages: {
     fontSize: 12,
     marginBottom: 8,
-    fontFamily: "Poppins_400Regular",
+    fontFamily: "Manrope_400Regular",
   },
   cardFooter: {
     flexDirection: "row",
@@ -89,10 +89,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "600",
     color: "#FFF",
-    fontFamily: "Poppins_600SemiBold",
+    fontFamily: "Manrope_600SemiBold",
   },
   cardDate: {
     fontSize: 10,
-    fontFamily: "Poppins_400Regular",
+    fontFamily: "Manrope_400Regular",
   },
 });

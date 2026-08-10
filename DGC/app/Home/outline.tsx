@@ -7,7 +7,6 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
-  Image,
   useWindowDimensions,
   FlatList,
 } from "react-native";
@@ -15,50 +14,26 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { BlurView } from "expo-blur";
 import BottomTabNavigation from "./BottomTabNavigation";
 import { useNavigation } from "./_navigationContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  fetchAllManualsFromHygraph,
+  toCompatManual,
+  computeNextUpcomingISO,
+  isManualUnlocked,
+  type CompatManual,
+} from "../../lib/hygraph";
 
-const API_BASE_URL = "https://dgc-backend.onrender.com";
-const OUTLINE_STORAGE_KEY = "outline_all_manuals";
+const ACCENT = "#9d00d4";
+const OUTLINE_STORAGE_KEY = "outline_all_manuals_hygraph";
 
 const months = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
-interface OutlineItem {
-  _id: string;
-  id: string;
-  title: string;
-  theme: string;
-  memoryVerse: string;
-  text: string;
-  introduction: string;
-  mainPoints: Array<{
-    title: string;
-    description: string;
-    references: string[];
-  }>;
-  classDiscussion: string;
-  conclusion: string;
-  month: string;
-  date: string;
-  order: number;
-  imageUrl?: string;
-  coverBannerImg?: string;
-}
+type OutlineItem = CompatManual;
 
 interface MonthData {
   name: string;
@@ -69,152 +44,33 @@ interface SearchResult extends OutlineItem {
   monthName: string;
 }
 
-const getResponsiveSize = (size: number): number => {
-  return size;
-};
+const getResponsiveSize = (size: number): number => size;
 
-// Assign global order across ALL months
-const assignGlobalOrderToManuals = (monthsData: MonthData[]): MonthData[] => {
-  let globalOrder = 1;
-  
-  return monthsData.map((month) => ({
-    ...month,
-    data: month.data.map((manual) => ({
-      ...manual,
-      order: globalOrder++,
-    })),
-  }));
-};
-
-// Main unlock function - Based on manual ORDER, not date
-const isManualUnlocked = (month: string, dateString: string, order: number = 0): boolean => {
-  console.log("Unlock check:", {
-    month: month,
-    date: dateString,
-    order: order
-  });
-  
-  // Get current date
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  
-  try {
-    // Jan 4th (order 0 or 1) is always unlocked
-    if (month === "January" && (order === 0 || order === 1)) {
-      console.log("✓ January 4th (order 0/1) - Always unlocked");
-      return true;
-    }
-    
-    // Base unlock date: January 4th
-    const baseUnlockDate = new Date(currentYear, 0, 4, 0, 0, 0, 0);
-    
-    // Calculate unlock date based on ORDER
-    // Order 0/1 = Jan 4 (unlocks immediately)
-    // Order 2 = Jan 8 (4 days after Jan 4)
-    // Order 3 = Jan 12 (8 days after Jan 4)
-    // Order 4 = Jan 16 (12 days after Jan 4)
-    // Order 5 = Jan 20 (16 days after Jan 4)
-    // Formula: Jan 4 + ((order - 1) * 4 days)
-    
-    const daysToAdd = (order - 1) * 4;
-    const unlockDate = new Date(baseUnlockDate);
-    unlockDate.setDate(baseUnlockDate.getDate() + daysToAdd);
-    
-    console.log("Order-based unlock calculation:", {
-      month: month,
-      order: order,
-      daysToAdd: daysToAdd,
-      unlockDate: unlockDate.toDateString(),
-      currentDate: currentDate.toDateString(),
-      isUnlocked: currentDate >= unlockDate
-    });
-    
-    // Check if current date is on or after the unlock date
-    if (currentDate >= unlockDate) {
-      console.log(`✓ Unlocking order ${order} (unlocked on ${unlockDate.toDateString()})`);
-      return true;
-    } else {
-      console.log(`✗ Locking order ${order} (unlocks on ${unlockDate.toDateString()})`);
-      return false;
-    }
-    
-  } catch (error) {
-    console.error("Error in unlock logic:", error);
-    return false;
-  }
-};
-
-// Function to get next unlock date for display
-const getNextUnlockDate = (): string | null => {
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  
-  // Base unlock date: January 4th
-  const baseUnlockDate = new Date(currentYear, 0, 4, 0, 0, 0, 0);
-  
-  // Calculate days since Jan 4th
-  const daysSinceBase = Math.floor((currentDate.getTime() - baseUnlockDate.getTime()) / (1000 * 60 * 60 * 24));
-  
-  // Find the next 4-day cycle
-  let nextUnlockCycle = 0;
-  
-  if (daysSinceBase >= 0) {
-    // If we're past Jan 4th, find next cycle
-    nextUnlockCycle = Math.floor(daysSinceBase / 4) + 1;
-  } else {
-    // If we're before Jan 4th, first unlock is Jan 4th
-    return "January 4, " + currentYear;
-  }
-  
-  const nextUnlockDate = new Date(baseUnlockDate);
-  nextUnlockDate.setDate(baseUnlockDate.getDate() + (nextUnlockCycle * 4));
-  
-  // If next unlock date is today or in the past, find the next one
-  if (nextUnlockDate <= currentDate) {
-    nextUnlockCycle++;
-    nextUnlockDate.setDate(baseUnlockDate.getDate() + (nextUnlockCycle * 4));
-  }
-  
-  return nextUnlockDate.toLocaleDateString('en-US', { 
-    month: 'long', 
-    day: 'numeric',
-    year: 'numeric'
-  });
+// A manual's `date` field is a free-text string like "4th January, 2026" —
+// this pulls the trailing 4-digit year out of it for the year filter.
+const extractYear = (dateString: string): number | null => {
+  const match = /(\d{4})/.exec(dateString || "");
+  return match ? parseInt(match[1], 10) : null;
 };
 
 export default function Outline() {
   const { isDarkMode } = useNavigation();
   const router = useRouter();
-  const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [searchText, setSearchText] = useState("");
   const [monthsData, setMonthsData] = useState<MonthData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [nextUnlockDate, setNextUnlockDate] = useState<string | null>(null);
   const { width } = useWindowDimensions();
 
   useEffect(() => {
     loadOutlineData();
   }, []);
 
-  useEffect(() => {
-    // Update next unlock date
-    const date = getNextUnlockDate();
-    setNextUnlockDate(date);
-    
-    const interval = setInterval(() => {
-      const newDate = getNextUnlockDate();
-      setNextUnlockDate(newDate);
-    }, 60000); // Update every minute
-    
-    return () => clearInterval(interval);
-  }, []);
-
   const saveToStorage = async (data: MonthData[]) => {
     try {
-      const jsonData = JSON.stringify(data);
-      await AsyncStorage.setItem(OUTLINE_STORAGE_KEY, jsonData);
-      console.log("Outline data saved to storage successfully");
+      await AsyncStorage.setItem(OUTLINE_STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
       console.error("Error saving outline data to storage:", error);
     }
@@ -223,277 +79,182 @@ export default function Outline() {
   const loadFromStorage = async () => {
     try {
       const jsonData = await AsyncStorage.getItem(OUTLINE_STORAGE_KEY);
-      if (jsonData) {
-        const data = JSON.parse(jsonData);
-        console.log("Outline data loaded from storage");
-        return data;
-      }
-      return null;
+      return jsonData ? JSON.parse(jsonData) : null;
     } catch (error) {
       console.error("Error loading outline data from storage:", error);
       return null;
     }
   };
 
+  // Cache is shown immediately (avoids a blank screen), then always
+  // overwritten by a fresh Hygraph fetch — the API, not the cache, is the
+  // source of truth for what's "latest"; cache only survives as the offline
+  // fallback in the catch block below.
   const loadOutlineData = async () => {
     try {
       setLoading(true);
 
       const cachedData = await loadFromStorage();
       if (cachedData && cachedData.length > 0) {
-        const dataWithGlobalOrder = assignGlobalOrderToManuals(cachedData);
-        setMonthsData(dataWithGlobalOrder);
+        setMonthsData(cachedData);
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/manuals/all`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const rawManuals = await fetchAllManualsFromHygraph();
+      const compatManuals = rawManuals.map((raw, index) => toCompatManual(raw, index + 1));
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const formattedMonths: MonthData[] = months.map((month) => ({
+        name: month,
+        data: compatManuals.filter((item) => item.month === month),
+      }));
 
-      const data = await response.json();
-
-      if (data.success && data.data) {
-        const formattedMonths: MonthData[] = months.map((month) => ({
-          name: month,
-          data: data.data[month] || [],
-        }));
-
-        // Assign global order across all months
-        const dataWithGlobalOrder = assignGlobalOrderToManuals(formattedMonths);
-
-        await saveToStorage(dataWithGlobalOrder);
-        setMonthsData(dataWithGlobalOrder);
-        
-        // Log unlock status for all manuals
-        console.log("=== UNLOCK STATUS ===");
-        dataWithGlobalOrder.forEach(month => {
-          if (month.data.length > 0) {
-            console.log(`\n--- ${month.name} ---`);
-            month.data.forEach(item => {
-              const isUnlocked = isManualUnlocked(item.month, item.date, item.order);
-              console.log({
-                title: item.title,
-                date: item.date,
-                month: item.month,
-                order: item.order,
-                isUnlocked: isUnlocked ? "UNLOCKED" : "LOCKED"
-              });
-            });
-          }
-        });
-        console.log("=== END UNLOCK STATUS ===");
-      }
+      await saveToStorage(formattedMonths);
+      setMonthsData(formattedMonths);
     } catch (error) {
-      console.error("Error fetching months:", error);
+      console.error("Error fetching manuals from Hygraph:", error);
 
       const cachedData = await loadFromStorage();
       if (!cachedData || cachedData.length === 0) {
-        const emptyMonths: MonthData[] = months.map((month) => ({
-          name: month,
-          data: [],
-        }));
-        setMonthsData(emptyMonths);
+        setMonthsData(months.map((month) => ({ name: month, data: [] })));
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleMonth = useCallback((monthName: string) => {
-    setExpandedMonth((prev) => (prev === monthName ? null : monthName));
-  }, []);
+  const allManuals = useMemo(() => monthsData.flatMap((m) => m.data), [monthsData]);
+  const nextUpcomingISO = useMemo(() => computeNextUpcomingISO(allManuals), [allManuals]);
 
   const handleCardPress = useCallback(
     (item: OutlineItem) => {
-      const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
-      console.log("Manual clicked:", {
-        title: item.title,
-        month: item.month,
-        date: item.date,
-        isUnlocked: isUnlocked
-      });
-      
-      if (!isUnlocked) {
-        console.log("Manual is locked");
-        return;
+      const isUnlocked = isManualUnlocked(item, nextUpcomingISO);
+      if (!isUnlocked) return;
+
+      if (item.month === "January" && (item.date.includes("4") || item.date.includes("4th"))) {
+        router.push({ pathname: "/Home/January4ManualDetail", params: { manual: JSON.stringify(item) } });
+      } else {
+        router.push({ pathname: "/Home/ManualDetail", params: { manual: JSON.stringify(item) } });
       }
 
-      // For January 4th, use special component
-      if (item.month === "January" && (item.date.includes("4") || item.date.includes("4th"))) {
-        router.push({
-          pathname: "/Home/January4ManualDetail",
-          params: { manual: JSON.stringify(item) },
-        });
-      } else {
-        // For all other manuals
-        router.push({
-          pathname: "/Home/ManualDetail",
-          params: { manual: JSON.stringify(item) },
-        });
-      }
-      
       setShowSearchResults(false);
       setSearchText("");
     },
-    [router]
+    [router, nextUpcomingISO]
+  );
+
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    monthsData.forEach((month) => month.data.forEach((item) => {
+      const year = extractYear(item.date);
+      if (year) years.add(year);
+    }));
+    if (years.size === 0) years.add(new Date().getFullYear());
+    return Array.from(years).sort((a, b) => b - a);
+  }, [monthsData]);
+
+  // Keep selectedYear valid once real data (and its actual year(s)) loads in.
+  useEffect(() => {
+    if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
+      setSelectedYear(availableYears[0]);
+    }
+  }, [availableYears]);
+
+  const yearFilteredMonths = useMemo(
+    () =>
+      monthsData.map((month) => ({
+        ...month,
+        data: month.data.filter((item) => {
+          const year = extractYear(item.date);
+          return year === null || year === selectedYear;
+        }),
+      })),
+    [monthsData, selectedYear]
   );
 
   const searchResults = useMemo(() => {
     if (!searchText.trim()) return [];
-
     const query = searchText.toLowerCase();
     const results: SearchResult[] = [];
 
     monthsData.forEach((month) => {
       month.data.forEach((item) => {
-        const titleMatch = item.title.toLowerCase().includes(query);
-        const themeMatch = item.theme.toLowerCase().includes(query);
-        const textMatch = item.text.toLowerCase().includes(query);
-        const dateMatch = item.date.toLowerCase().includes(query);
-        const introMatch = item.introduction.toLowerCase().includes(query);
-        const memoryVerseMatch = item.memoryVerse.toLowerCase().includes(query);
-        const classDiscussionMatch = item.classDiscussion.toLowerCase().includes(query);
-        const mainPointsMatch = item.mainPoints.some(
-          (point) =>
-            point.title.toLowerCase().includes(query) ||
-            point.description.toLowerCase().includes(query)
-        );
+        const matches =
+          item.title.toLowerCase().includes(query) ||
+          item.theme.toLowerCase().includes(query) ||
+          item.text.toLowerCase().includes(query) ||
+          item.date.toLowerCase().includes(query) ||
+          item.introduction.toLowerCase().includes(query) ||
+          item.memoryVerse.toLowerCase().includes(query) ||
+          item.classDiscussion.toLowerCase().includes(query);
 
-        if (
-          titleMatch ||
-          themeMatch ||
-          textMatch ||
-          dateMatch ||
-          introMatch ||
-          memoryVerseMatch ||
-          classDiscussionMatch ||
-          mainPointsMatch
-        ) {
-          results.push({ ...item, monthName: month.name });
-        }
+        if (matches) results.push({ ...item, monthName: month.name });
       });
     });
 
     return results.sort((a, b) => {
-      const aTitle = a.title.toLowerCase().includes(query) ? 2 : 0;
-      const aTheme = a.theme.toLowerCase().includes(query) ? 1 : 0;
-      const bTitle = b.title.toLowerCase().includes(query) ? 2 : 0;
-      const bTheme = b.theme.toLowerCase().includes(query) ? 1 : 0;
-      return bTitle + bTheme - (aTitle + aTheme);
+      const aScore = (a.title.toLowerCase().includes(query) ? 2 : 0) + (a.theme.toLowerCase().includes(query) ? 1 : 0);
+      const bScore = (b.title.toLowerCase().includes(query) ? 2 : 0) + (b.theme.toLowerCase().includes(query) ? 1 : 0);
+      return bScore - aScore;
     });
   }, [monthsData, searchText]);
 
-  const filteredMonths = useMemo(
-    () =>
-      monthsData.map((month) => ({
-        ...month,
-        data: month.data.filter((item) =>
-          item.title.toLowerCase().includes(searchText.toLowerCase())
-        ),
-      })),
-    [monthsData, searchText]
+  const selectedMonthData = useMemo(
+    () => yearFilteredMonths.find((m) => m.name === selectedMonth) ?? null,
+    [yearFilteredMonths, selectedMonth]
   );
 
-  const renderSearchResultCard = ({ item }: { item: SearchResult }) => {
-    const img = item.coverBannerImg || item.imageUrl || "https://via.placeholder.com/200";
-    const isSmallScreen = width < 380;
-    const imageSize = isSmallScreen ? 60 : 80;
-    const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
+  const renderManualRow = (item: OutlineItem, keyPrefix: string, monthLabel?: string) => {
+    const isUnlocked = isManualUnlocked(item, nextUpcomingISO);
 
     return (
       <TouchableOpacity
+        key={keyPrefix}
         activeOpacity={isUnlocked ? 0.7 : 1}
         onPress={() => handleCardPress(item)}
         style={[
-          styles.searchResultCard,
+          styles.manualRow,
           {
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: getResponsiveSize(12),
-            paddingHorizontal: getResponsiveSize(12),
-            paddingVertical: getResponsiveSize(10),
-            borderWidth: 1,
-            borderColor: isDarkMode ? "#444444" : "#cccccc",
-            borderRadius: getResponsiveSize(12),
-            backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-            elevation: 2,
+            borderColor: isDarkMode ? "#333333" : "#e5e5e5",
+            backgroundColor: isDarkMode ? "#141414" : "#ffffff",
           },
         ]}
       >
-        <View style={{ position: "relative" }}>
-          <Image
-            source={{ uri: img }}
-            style={[styles.searchResultImage, { 
-              width: imageSize, 
-              height: imageSize,
-            }]}
-            onError={() => console.log("Image failed:", img)}
+        <View
+          style={[
+            styles.manualIconCircle,
+            { backgroundColor: isUnlocked ? "rgba(157,0,212,0.12)" : isDarkMode ? "#242424" : "#f0f0f0" },
+          ]}
+        >
+          <MaterialIcons
+            name={isUnlocked ? "menu-book" : "lock"}
+            size={20}
+            color={isUnlocked ? ACCENT : isDarkMode ? "#666" : "#aaa"}
           />
-          {!isUnlocked && (
-            <BlurView
-              intensity={90}
-              tint={isDarkMode ? "dark" : "light"}
-              style={[
-                StyleSheet.absoluteFillObject,
-                {
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  alignItems: "center",
-                  justifyContent: "center",
-                },
-              ]}
-            >
-              <MaterialIcons name="lock" size={28} color={isDarkMode ? "#FFF" : "#000"} />
-            </BlurView>
-          )}
         </View>
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text
             numberOfLines={2}
-            style={[styles.searchResultTitle, { 
-              color: isUnlocked ? (isDarkMode ? "#FFF" : "#000") : (isDarkMode ? "#888" : "#999") 
-            }]}
+            style={[styles.manualTitle, { color: isUnlocked ? (isDarkMode ? "#FFF" : "#111") : isDarkMode ? "#777" : "#aaa" }]}
           >
             {item.title}
           </Text>
-          {item.text && (
+          {!!item.text && (
             <Text
               numberOfLines={1}
-              style={[styles.searchResultScripture, { 
-                color: isUnlocked ? (isDarkMode ? "#DDD" : "#444") : (isDarkMode ? "#666" : "#AAA") 
-              }]}
+              style={[styles.manualScripture, { color: isUnlocked ? (isDarkMode ? "#CCC" : "#555") : isDarkMode ? "#555" : "#bbb" }]}
             >
               {item.text}
             </Text>
           )}
-          <View style={styles.searchResultMeta}>
-            {item.theme && (
-              <Text style={[
-                styles.searchResultTheme,
-                { 
-                  backgroundColor: isUnlocked ? "#707070ff" : (isDarkMode ? "#555555" : "#AAAAAA"),
-                }
-              ]}>
-                {item.theme}
-              </Text>
+          <View style={styles.manualMetaRow}>
+            {!!item.theme && (
+              <View style={[styles.themeBadge, { backgroundColor: isUnlocked ? "rgba(157,0,212,0.12)" : isDarkMode ? "#2a2a2a" : "#eeeeee" }]}>
+                <Text numberOfLines={1} style={[styles.themeBadgeText, { color: isUnlocked ? ACCENT : isDarkMode ? "#888" : "#999" }]}>
+                  {item.theme}
+                </Text>
+              </View>
             )}
-            {item.date && (
-              <Text style={[styles.searchResultDate, { 
-                color: isUnlocked ? (isDarkMode ? "#999" : "#666") : (isDarkMode ? "#777" : "#999") 
-              }]}>
-                {item.date}
-              </Text>
-            )}
-            <Text style={[styles.searchResultMonth, { 
-              color: isUnlocked ? (isDarkMode ? "#999" : "#666") : (isDarkMode ? "#777" : "#999") 
-            }]}>
-              {item.monthName}
+            <Text style={[styles.manualDate, { color: isDarkMode ? "#888" : "#999" }]}>
+              {monthLabel ? `${monthLabel} · ${item.date}` : item.date}
             </Text>
           </View>
         </View>
@@ -503,14 +264,9 @@ export default function Outline() {
 
   if (loading) {
     return (
-      <SafeAreaView
-        style={[
-          styles.container,
-          { backgroundColor: isDarkMode ? "#000000" : "#FFF" },
-        ]}
-      >
+      <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? "#000000" : "#FFF" }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={isDarkMode ? "#ffffffff" : "#010002ff"} />
+          <ActivityIndicator size="large" color={isDarkMode ? "#ffffff" : "#010002"} />
         </View>
         <BottomTabNavigation />
       </SafeAreaView>
@@ -518,50 +274,11 @@ export default function Outline() {
   }
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { backgroundColor: isDarkMode ? "#000000" : "#FFF" },
-      ]}
-    >
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={[styles.subtitle, { color: isDarkMode ? "#FFF" : "#000" }]}>
-          Manuals
-        </Text>
-        
-        {/* Unlock Schedule Information */}
-        <View style={[
-          styles.scheduleContainer,
-          { 
-            backgroundColor: isDarkMode ? "#1a0f2e" : "#f3e5f5",
-            borderLeftColor: "#9d00d4"
-          }
-        ]}>
-          <MaterialIcons name="schedule" size={20} color="#9d00d4" />
-          <View style={styles.scheduleTextContainer}>
-            <Text style={[styles.scheduleTitle, { color: isDarkMode ? "#FFFFFF" : "#333" }]}>
-              Manual Release Schedule
-            </Text>
-            
-            <Text style={[styles.scheduleText, { color: isDarkMode ? "#CCCCCC" : "#666" }]}>
-              New manuals unlock every 7 days
-            </Text>
-            
-           
-            
-           
-          </View>
-        </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? "#000000" : "#FFF" }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+        <Text style={[styles.subtitle, { color: isDarkMode ? "#FFF" : "#000" }]}>Manuals</Text>
 
-        <View
-          style={[
-            styles.searchContainer,
-            {
-              borderColor: isDarkMode ? "#FFF" : "#000",
-              backgroundColor: isDarkMode ? "#1a1a1a" : "#FFF",
-            },
-          ]}
-        >
+        <View style={[styles.searchContainer, { borderColor: isDarkMode ? "#333" : "#e5e5e5", backgroundColor: isDarkMode ? "#141414" : "#f7f7f7" }]}>
           <Feather name="search" size={19} color={isDarkMode ? "#666" : "#999"} />
           <TextInput
             style={[styles.searchInput, { color: isDarkMode ? "#FFF" : "#000" }]}
@@ -574,200 +291,113 @@ export default function Outline() {
             }}
           />
           {searchText.length > 0 && (
-            <TouchableOpacity onPress={() => {
-              setSearchText("");
-              setShowSearchResults(false);
-            }}>
+            <TouchableOpacity onPress={() => { setSearchText(""); setShowSearchResults(false); }}>
               <MaterialIcons name="close" size={20} color={isDarkMode ? "#666" : "#999"} />
             </TouchableOpacity>
           )}
         </View>
 
         {showSearchResults && searchResults.length > 0 && (
-          <View
-            style={[
-              styles.searchResultsContainer,
-              { backgroundColor: isDarkMode ? "#1a1a1a" : "#f5f5f5" },
-            ]}
-          >
+          <View style={[styles.searchResultsContainer, { backgroundColor: isDarkMode ? "#141414" : "#f7f7f7" }]}>
             <Text style={[styles.searchResultsTitle, { color: isDarkMode ? "#CCC" : "#666" }]}>
               Found {searchResults.length} result{searchResults.length !== 1 ? "s" : ""}
             </Text>
             <FlatList
               data={searchResults}
-              renderItem={renderSearchResultCard}
+              renderItem={({ item }) => renderManualRow(item, `${item.monthName}-${item._id || item.id}`, item.monthName)}
               keyExtractor={(item) => `${item.monthName}-${item._id || item.id}`}
               scrollEnabled={false}
-              ItemSeparatorComponent={() => (
-                <View
-                  style={{
-                    height: 1,
-                    backgroundColor: isDarkMode ? "#333333" : "#e0e0e0",
-                    marginVertical: 8,
-                  }}
-                />
-              )}
+              ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
             />
           </View>
         )}
 
-      
         {showSearchResults && searchResults.length === 0 && searchText.trim().length > 0 && (
-          <View
-            style={[
-              styles.noResultsContainer,
-              { backgroundColor: isDarkMode ? "#1a1a1a" : "#f5f5f5" },
-            ]}
-          >
-            <MaterialIcons
-              name="search-off"
-              size={40}
-              color={isDarkMode ? "#666" : "#999"}
-            />
-            <Text style={[styles.noResultsText, { color: isDarkMode ? "#888" : "#666" }]}>
-              No manuals found
-            </Text>
-            <Text style={[styles.noResultsSubtext, { color: isDarkMode ? "#666" : "#999" }]}>
-              Try searching with different keywords
-            </Text>
+          <View style={[styles.noResultsContainer, { backgroundColor: isDarkMode ? "#141414" : "#f7f7f7" }]}>
+            <MaterialIcons name="search-off" size={40} color={isDarkMode ? "#666" : "#999"} />
+            <Text style={[styles.noResultsText, { color: isDarkMode ? "#888" : "#666" }]}>No manuals found</Text>
+            <Text style={[styles.noResultsSubtext, { color: isDarkMode ? "#666" : "#999" }]}>Try searching with different keywords</Text>
           </View>
         )}
 
         {!showSearchResults && (
-          <View style={styles.monthsContainer}>
-            {filteredMonths.map((month) => (
-              <View key={month.name}>
-                <TouchableOpacity
-                  style={styles.monthButton}
-                  onPress={() => toggleMonth(month.name)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.monthButtonText}>{month.name}</Text>
-                  <MaterialIcons
-                    name={expandedMonth === month.name ? "expand-less" : "expand-more"}
-                    size={32}
-                    color="#FFF"
-                  />
+          <>
+            {availableYears.length > 1 && (
+              <View style={styles.yearRow}>
+                {availableYears.map((year) => {
+                  const isActive = year === selectedYear;
+                  return (
+                    <TouchableOpacity
+                      key={year}
+                      onPress={() => { setSelectedYear(year); setSelectedMonth(null); }}
+                      style={[
+                        styles.yearChip,
+                        {
+                          backgroundColor: isActive ? ACCENT : isDarkMode ? "#1a1a1a" : "#f0f0f0",
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.yearChipText, { color: isActive ? "#FFF" : isDarkMode ? "#CCC" : "#555" }]}>{year}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+
+            {!selectedMonth ? (
+              <View style={styles.monthsGrid}>
+                {yearFilteredMonths.map((month) => {
+                  const count = month.data.length;
+                  const isCurrentCalendarMonth = months[new Date().getMonth()] === month.name && selectedYear === new Date().getFullYear();
+
+                  return (
+                    <TouchableOpacity
+                      key={month.name}
+                      activeOpacity={0.8}
+                      onPress={() => setSelectedMonth(month.name)}
+                      style={[
+                        styles.monthCard,
+                        {
+                          backgroundColor: isDarkMode ? "#141414" : "#ffffff",
+                          borderColor: isCurrentCalendarMonth ? ACCENT : isDarkMode ? "#2a2a2a" : "#e5e5e5",
+                        },
+                      ]}
+                    >
+                      <View style={[styles.monthIconCircle, { backgroundColor: count > 0 ? "rgba(157,0,212,0.12)" : isDarkMode ? "#242424" : "#f0f0f0" }]}>
+                        <Feather name="calendar" size={16} color={count > 0 ? ACCENT : isDarkMode ? "#666" : "#aaa"} />
+                      </View>
+                      <Text style={[styles.monthCardTitle, { color: isDarkMode ? "#FFF" : "#111" }]}>{month.name}</Text>
+                      <Text style={[styles.monthCardCount, { color: count > 0 ? (isDarkMode ? "#999" : "#777") : isDarkMode ? "#555" : "#bbb" }]}>
+                        {count > 0 ? `${count} manual${count !== 1 ? "s" : ""}` : "Not available"}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : (
+              <View>
+                <TouchableOpacity style={styles.backRow} onPress={() => setSelectedMonth(null)} activeOpacity={0.7}>
+                  <Feather name="arrow-left" size={18} color={isDarkMode ? "#FFF" : "#111"} />
+                  <Text style={[styles.backRowText, { color: isDarkMode ? "#FFF" : "#111" }]}>
+                    {selectedMonth} {selectedYear}
+                  </Text>
                 </TouchableOpacity>
 
-                {expandedMonth === month.name && (
-                  <View style={styles.cardsContainer}>
-                    {month.data.length > 0 ? (
-                      month.data.map((item, index) => {
-                        const img =
-                          item.coverBannerImg ||
-                          item.imageUrl ||
-                          "https://via.placeholder.com/200";
-
-                        const isSmallScreen = width < 380;
-                        const imageSize = isSmallScreen ? 80 : 100;
-                        const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
-
-                        const uniqueKey = `${month.name}-${item._id || item.id}-${item.order}-${index}`;
-
-                        return (
-                          <TouchableOpacity
-                            key={uniqueKey}
-                            activeOpacity={isUnlocked ? 0.7 : 1}
-                            onPress={() => handleCardPress(item)}
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              marginBottom: getResponsiveSize(12),
-                              paddingHorizontal: getResponsiveSize(12),
-                              paddingVertical: getResponsiveSize(10),
-                              borderWidth: 1,
-                              borderColor: isDarkMode ? "#444444" : "#cccccc",
-                              borderRadius: getResponsiveSize(12),
-                              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-                              elevation: 2,
-                            }}
-                          >
-                            <View style={{ position: "relative" }}>
-                              <Image
-                                source={{ uri: img }}
-                                style={[styles.cardImage, { 
-                                  width: imageSize, 
-                                  height: imageSize,
-                                }]}
-                                onError={(e) =>
-                                  console.log("Image failed:", img, e.nativeEvent)
-                                }
-                              />
-                              {!isUnlocked && (
-                                <BlurView
-                                  intensity={90}
-                                  tint={isDarkMode ? "dark" : "light"}
-                                  style={[
-                                    StyleSheet.absoluteFillObject,
-                                    {
-                                      borderRadius: 12,
-                                      overflow: "hidden",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                    },
-                                  ]}
-                                >
-                                  <MaterialIcons name="lock" size={32} color={isDarkMode ? "#FFF" : "#000"} />
-                                </BlurView>
-                              )}
-                            </View>
-                            <View style={{ flex: 1, marginLeft: 12 }}>
-                              <Text
-                                numberOfLines={3}
-                                style={[styles.cardTitle, { 
-                                  color: isUnlocked ? (isDarkMode ? "#FFF" : "#000") : (isDarkMode ? "#888" : "#999") 
-                                }]}
-                              >
-                                {item.title}
-                              </Text>
-                              {item.text && (
-                                <Text
-                                  numberOfLines={1}
-                                  style={[styles.scriptureRef, { 
-                                    color: isUnlocked ? (isDarkMode ? "#DDD" : "#444") : (isDarkMode ? "#666" : "#AAA") 
-                                  }]}
-                                >
-                                  {item.text}
-                                </Text>
-                              )}
-                              <View style={styles.themeDateRowCard}>
-                                {item.theme && (
-                                  <View style={[styles.themeBadgeCard, { 
-                                    backgroundColor: isUnlocked ? "#585858ff" : (isDarkMode ? "#444444" : "#AAAAAA"),
-                                  }]}>
-                                    <Text numberOfLines={1} style={styles.themeBadgeTextCard}>
-                                      {item.theme}
-                                    </Text>
-                                  </View>
-                                )}
-                                {item.date && (
-                                  <Text
-                                    numberOfLines={1}
-                                    style={[styles.dateTextCard, { 
-                                      color: isUnlocked ? (isDarkMode ? "#CCC" : "#333") : (isDarkMode ? "#777" : "#999")
-                                    }]}
-                                  >
-                                    {item.date}
-                                  </Text>
-                                )}
-                              </View>
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })
-                    ) : (
-                      <View style={styles.emptyContainer}>
-                        <Text style={[styles.emptyText, { color: isDarkMode ? "#888" : "#777" }]}>
-                          No manuals available yet
-                        </Text>
-                      </View>
+                {selectedMonthData && selectedMonthData.data.length > 0 ? (
+                  <View style={styles.manualsList}>
+                    {selectedMonthData.data.map((item, index) =>
+                      renderManualRow(item, `${selectedMonth}-${item._id || item.id}-${index}`)
                     )}
+                  </View>
+                ) : (
+                  <View style={styles.emptyContainer}>
+                    <MaterialIcons name="menu-book" size={32} color={isDarkMode ? "#444" : "#ccc"} />
+                    <Text style={[styles.emptyText, { color: isDarkMode ? "#888" : "#777" }]}>No manuals available yet</Text>
                   </View>
                 )}
               </View>
-            ))}
-          </View>
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -778,115 +408,39 @@ export default function Outline() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16, paddingVertical: 12 },
-  subtitle: { fontSize: 24, fontWeight: "700", fontStyle: "italic", marginBottom: 12 },
-  scheduleContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    gap: 12,
-  },
-  scheduleTextContainer: {
-    flex: 1,
-  },
-  scheduleTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  scheduleText: {
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  highlightText: {
-    fontWeight: "bold",
-  },
-  scheduleNote: {
-    fontSize: 12,
-    fontStyle: "italic",
-    marginTop: 8,
-  },
-  searchContainer: { flexDirection: "row", alignItems: "center", borderWidth: 0.7, borderRadius: 29, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 16 },
-  searchInput: { flex: 1, marginLeft: 12, fontSize: 14 },
-  searchResultsContainer: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    maxHeight: 500,
-  },
-  searchResultsTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  searchResultCard: {
-    marginBottom: 8,
-  },
-  searchResultImage: {
-    borderRadius: 8,
-    resizeMode: "cover",
-  },
-  searchResultTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  searchResultScripture: {
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  searchResultMeta: {
-    flexDirection: "row",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  searchResultTheme: {
-    color: "#FFF",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    fontSize: 10,
-    fontWeight: "600",
-    overflow: "hidden",
-  },
-  searchResultDate: {
-    fontSize: 10,
-    fontWeight: "500",
-  },
-  searchResultMonth: {
-    fontSize: 10,
-    fontWeight: "500",
-    fontStyle: "italic",
-  },
-  noResultsContainer: {
-    borderRadius: 12,
-    padding: 32,
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  noResultsText: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: 12,
-  },
-  noResultsSubtext: {
-    fontSize: 13,
-    marginTop: 6,
-  },
-  monthsContainer: { gap: 12, marginBottom: 80 },
-  monthButton: { backgroundColor: "#444444", paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  monthButtonText: { fontSize: 16, fontWeight: "600", color: "#FFF" },
-  cardsContainer: { gap: 12, marginTop: 12, marginBottom: 12 },
-  cardImage: { borderRadius: 12, resizeMode: "cover" },
-  cardTitle: { fontSize: 15, fontWeight: "700", marginBottom: 10 },
-  scriptureRef: { fontSize: 13, marginBottom: 12 },
-  themeDateRowCard: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
-  themeBadgeCard: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  themeBadgeTextCard: { fontSize: 12, fontWeight: "700", color: "#f0f0f0ff", fontStyle: "italic" },
-  dateTextCard: { fontSize: 12 },
-  emptyContainer: { paddingVertical: 16, alignItems: "center" },
-  emptyText: { fontSize: 14 },
+  subtitle: { fontSize: 26, fontFamily: "Manrope_800ExtraBold", marginBottom: 16 },
+  searchContainer: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 11, marginBottom: 18 },
+  searchInput: { flex: 1, fontSize: 14, fontFamily: "Manrope_500Medium" },
+  searchResultsContainer: { borderRadius: 16, padding: 16, marginBottom: 16 },
+  searchResultsTitle: { fontSize: 13, fontFamily: "Manrope_600SemiBold", marginBottom: 12 },
+  noResultsContainer: { borderRadius: 16, padding: 32, marginBottom: 16, alignItems: "center" },
+  noResultsText: { fontSize: 15, fontFamily: "Manrope_600SemiBold", marginTop: 12 },
+  noResultsSubtext: { fontSize: 13, fontFamily: "Manrope_400Regular", marginTop: 6 },
+
+  yearRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
+  yearChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 18 },
+  yearChipText: { fontSize: 13, fontFamily: "Manrope_700Bold" },
+
+  monthsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 12 },
+  monthCard: { width: "47.5%", borderRadius: 18, borderWidth: 1.5, padding: 16 },
+  monthIconCircle: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  monthCardTitle: { fontSize: 15, fontFamily: "Manrope_700Bold", marginBottom: 4 },
+  monthCardCount: { fontSize: 12, fontFamily: "Manrope_500Medium" },
+
+  backRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
+  backRowText: { fontSize: 17, fontFamily: "Manrope_700Bold" },
+  manualsList: { gap: 12 },
+
+  manualRow: { flexDirection: "row", alignItems: "center", padding: 12, borderWidth: 1, borderRadius: 16, marginBottom: 12 },
+  manualIconCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  manualTitle: { fontSize: 14.5, fontFamily: "Manrope_700Bold", marginBottom: 6 },
+  manualScripture: { fontSize: 12.5, fontFamily: "Manrope_400Regular", marginBottom: 8 },
+  manualMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  themeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, maxWidth: "60%" },
+  themeBadgeText: { fontSize: 10.5, fontFamily: "Manrope_700Bold" },
+  manualDate: { fontSize: 11, fontFamily: "Manrope_500Medium" },
+
+  emptyContainer: { paddingVertical: 40, alignItems: "center", gap: 10 },
+  emptyText: { fontSize: 14, fontFamily: "Manrope_500Medium" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

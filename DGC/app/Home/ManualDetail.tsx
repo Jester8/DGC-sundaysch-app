@@ -438,7 +438,7 @@ const IntroductionFormatter = ({ text, onScripturePress, isDarkMode, fontSize, f
               key={lineIndex}
               style={{
                 fontSize: fontSize * scale,
-                fontFamily: "Poppins_600SemiBold",
+                fontFamily: "Manrope_600SemiBold",
                 color: isDarkMode ? "#FFFFFF" : "#000000",
                 lineHeight: lineHeight * scale,
                 marginBottom: 8,
@@ -930,7 +930,7 @@ const BibleModal = ({ visible, scriptureReference, onClose, isDarkMode }: any) =
         </View>
 
         <View style={[styles.versionSelector, { backgroundColor: isDarkMode ? "#1a1a1a" : "#f9f9f9", borderBottomColor: isDarkMode ? "#333333" : "#e0e0e0" }]}>
-          <Text style={{ fontSize: isTablet ? 13 : 12, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#999999" : "#666666", marginBottom: 8 }}>
+          <Text style={{ fontSize: isTablet ? 13 : 12, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#999999" : "#666666", marginBottom: 8 }}>
             SELECT VERSION
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: isTablet ? 10 : 8 }}>
@@ -946,7 +946,7 @@ const BibleModal = ({ visible, scriptureReference, onClose, isDarkMode }: any) =
               >
                 <Text style={{
                   fontSize: isTablet ? 12 : 11,
-                  fontFamily: "Poppins_600SemiBold",
+                  fontFamily: "Manrope_600SemiBold",
                   color: selectedVersion === version.id ? "#FFFFFF" : isDarkMode ? "#b0b0b0" : "#333333",
                 }}>
                   {version.abbr}
@@ -1079,7 +1079,7 @@ export default function ManualDetail() {
           <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
             {!isSpecialManual && !isJanuary11Manual && manualData.theme && (
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#999999" : "#000000", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <Text style={{ fontSize: 13 * scale, fontFamily: "Manrope_400Regular", color: isDarkMode ? "#999999" : "#000000", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Theme: {manualData.theme}
                 </Text>
               </View>
@@ -1087,7 +1087,7 @@ export default function ManualDetail() {
 
             {isJanuary11Manual && !manualData.theme && (
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: "#9d00d4", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: "bold" }}>
+                <Text style={{ fontSize: 13 * scale, fontFamily: "Manrope_400Regular", color: "#9d00d4", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: "bold" }}>
                   🎉 UNLOCKED: JANUARY 11TH SPECIAL EDITION
                 </Text>
               </View>
@@ -1095,7 +1095,7 @@ export default function ManualDetail() {
 
             {manualData.title && (
               <View style={{ marginBottom: 24 }}>
-                <Text style={{ fontSize: 20 * scale, fontFamily: "Poppins_700Bold", color: isDarkMode ? "#FFFFFF" : "#000000", lineHeight: 32 * scale }}>
+                <Text style={{ fontSize: 20 * scale, fontFamily: "Manrope_700Bold", color: isDarkMode ? "#FFFFFF" : "#000000", lineHeight: 32 * scale }}>
                   {manualData.title}
                 </Text>
               </View>
@@ -1104,14 +1104,14 @@ export default function ManualDetail() {
             {manualData.text && (
               <View style={{ marginBottom: 24 }}>
                 <View style={{ marginLeft: -10, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4, alignSelf: "flex-start", marginBottom: 12 }}>
-                  <Text style={{ fontSize: 11 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5 }}>SCRIPTURE TEXT</Text>
+                  <Text style={{ fontSize: 11 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5 }}>SCRIPTURE TEXT</Text>
                 </View>
                 <ScriptureText 
                   text={manualData.text} 
                   onScripturePress={handleScripturePress} 
                   isDarkMode={isDarkMode} 
                   fontSize={14} 
-                  fontFamily="Poppins_400Regular" 
+                  fontFamily="Manrope_400Regular" 
                   color={isDarkMode ? "#FFFFFF" : "#000000"} 
                   lineHeight={24} 
                   scale={scale} 
@@ -1122,14 +1122,14 @@ export default function ManualDetail() {
             {manualData.memoryVerse && (
               <View style={{ marginBottom: 24, backgroundColor: isDarkMode ? "#1a0f2e" : "#f3e5f5", borderRadius: 8, padding: 16, borderLeftWidth: 4, borderLeftColor: "#9d00d4" }}>
                 <View style={{ marginBottom: 12 }}>
-                  <Text style={{ fontSize: 11 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5, textTransform: "uppercase" }}>Memory Verse</Text>
+                  <Text style={{ fontSize: 11 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5, textTransform: "uppercase" }}>Memory Verse</Text>
                 </View>
                 <ScriptureText 
                   text={manualData.memoryVerse} 
                   onScripturePress={handleScripturePress} 
                   isDarkMode={isDarkMode} 
                   fontSize={14} 
-                  fontFamily="Poppins_400Regular" 
+                  fontFamily="Manrope_400Regular" 
                   color={isDarkMode ? "#d0d0d0" : "#333333"} 
                   lineHeight={24} 
                   scale={scale} 
@@ -1141,7 +1141,7 @@ export default function ManualDetail() {
               <View style={{ marginBottom: 24 }}>
                 <Text style={{ 
                   fontSize: 12 * scale, 
-                  fontFamily: "Poppins_600SemiBold", 
+                  fontFamily: "Manrope_600SemiBold", 
                   color: isDarkMode ? "#FFFFFF" : "#000000", 
                   textTransform: "uppercase", 
                   letterSpacing: 0.5, 
@@ -1154,7 +1154,7 @@ export default function ManualDetail() {
                   onScripturePress={handleScripturePress} 
                   isDarkMode={isDarkMode} 
                   fontSize={14} 
-                  fontFamily="Poppins_400Regular" 
+                  fontFamily="Manrope_400Regular" 
                   color={isDarkMode ? "#b0b0b0" : "#666666"} 
                   lineHeight={22} 
                   scale={scale} 
@@ -1164,23 +1164,23 @@ export default function ManualDetail() {
 
             {manualData.mainPoints && manualData.mainPoints.length > 0 && (
               <View style={{ marginBottom: 32 }}>
-                <Text style={{ fontSize: 12 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 16 }}>Main Points</Text>
+                <Text style={{ fontSize: 12 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 16 }}>Main Points</Text>
                 {manualData.subTopic && (
-                  <Text style={{ fontSize: 15 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", marginBottom: 16 }}>
+                  <Text style={{ fontSize: 15 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", marginBottom: 16 }}>
                     {manualData.subTopic}
                   </Text>
                 )}
                 {manualData.mainPoints.map((point, index) => (
                   <View key={index} style={{ marginBottom: 28, paddingBottom: 16, borderBottomWidth: index < manualData.mainPoints.length - 1 ? 1 : 0, borderBottomColor: isDarkMode ? "#2a2a2a" : "#e8e8e8" }}>
-                    <Text style={{ fontSize: 15 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", marginBottom: 10 }}>
+                    <Text style={{ fontSize: 15 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", marginBottom: 10 }}>
                       {index + 1}. {point.title}
                     </Text>
-                    <Text style={{ fontSize: 14 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#b0b0b0" : "#666666", lineHeight: 22 * scale, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 14 * scale, fontFamily: "Manrope_400Regular", color: isDarkMode ? "#b0b0b0" : "#666666", lineHeight: 22 * scale, marginBottom: 12 }}>
                       {point.description}
                     </Text>
                     {point.references && point.references.length > 0 && (
                       <View style={{ marginTop: 8 }}>
-                        <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#888888" : "#888888" }}>
+                        <Text style={{ fontSize: 13 * scale, fontFamily: "Manrope_400Regular", color: isDarkMode ? "#888888" : "#888888" }}>
                           References:{" "}
                           {point.references.map((ref, idx) => (
                             <React.Fragment key={idx}>
@@ -1189,7 +1189,7 @@ export default function ManualDetail() {
                                 onScripturePress={handleScripturePress} 
                                 isDarkMode={isDarkMode} 
                                 fontSize={13} 
-                                fontFamily="Poppins_400Regular" 
+                                fontFamily="Manrope_400Regular" 
                                 color={isDarkMode ? "#888888" : "#888888"} 
                                 lineHeight={20} 
                                 scale={scale} 
@@ -1207,8 +1207,8 @@ export default function ManualDetail() {
 
             {manualData.classDiscussion && (
               <View style={{ marginBottom: 28, backgroundColor: isDarkMode ? "#1a0f2e" : "#f3e5f5", borderRadius: 8, padding: 16, borderLeftWidth: 4, borderLeftColor: "#9d00d4" }}>
-                <Text style={{ fontSize: 11 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 12 }}>Class Discussion</Text>
-                <Text style={{ fontSize: 14 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#d0d0d0" : "#333333", lineHeight: 22 * scale, fontStyle: "italic" }}>
+                <Text style={{ fontSize: 11 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 12 }}>Class Discussion</Text>
+                <Text style={{ fontSize: 14 * scale, fontFamily: "Manrope_400Regular", color: isDarkMode ? "#d0d0d0" : "#333333", lineHeight: 22 * scale, fontStyle: "italic" }}>
                   {manualData.classDiscussion}
                 </Text>
               </View>
@@ -1216,8 +1216,8 @@ export default function ManualDetail() {
 
             {manualData.conclusion && (
               <View style={{ marginBottom: 28 }}>
-                <Text style={{ fontSize: 11 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 12 }}>Conclusion</Text>
-                <Text style={{ fontSize: 14 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#d0d0d0" : "#333333", lineHeight: 22 * scale }}>
+                <Text style={{ fontSize: 11 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 12 }}>Conclusion</Text>
+                <Text style={{ fontSize: 14 * scale, fontFamily: "Manrope_400Regular", color: isDarkMode ? "#d0d0d0" : "#333333", lineHeight: 22 * scale }}>
                   {manualData.conclusion}
                 </Text>
               </View>
@@ -1225,8 +1225,8 @@ export default function ManualDetail() {
 
             {(isSpecialManual || isJanuary11Manual) && manualData.declaration && (
               <View style={{ marginBottom: 32, backgroundColor: isDarkMode ? "#1a0f2e" : "#f3e5f5", borderRadius: 8, padding: 20, borderLeftWidth: 4, borderLeftColor: "#9d00d4" }}>
-                <Text style={{ fontSize: 11 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 14 }}>Declaration</Text>
-                <Text style={{ fontSize: 15 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#d0d0d0" : "#333333", lineHeight: 26 * scale, fontStyle: "italic" }}>
+                <Text style={{ fontSize: 11 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 14 }}>Declaration</Text>
+                <Text style={{ fontSize: 15 * scale, fontFamily: "Manrope_400Regular", color: isDarkMode ? "#d0d0d0" : "#333333", lineHeight: 26 * scale, fontStyle: "italic" }}>
                   {manualData.declaration}
                 </Text>
               </View>
@@ -1235,7 +1235,7 @@ export default function ManualDetail() {
             {!isSpecialManual && !isJanuary11Manual && manualData.recommendedBooks && manualData.recommendedBooks.length > 0 && (
               <View style={{ marginBottom: 32 }}>
                 <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 12 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textTransform: "uppercase", letterSpacing: 0.5 }}>Recommended Books</Text>
+                  <Text style={{ fontSize: 12 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textTransform: "uppercase", letterSpacing: 0.5 }}>Recommended Books</Text>
                 </View>
                 {manualData.recommendedBooks.map((book, index) => (
                   <View key={index} style={[styles.bookCard, { backgroundColor: isDarkMode ? "#1a1a1a" : "#f9f9f9", borderColor: isDarkMode ? "#2a2a2a" : "#e8e8e8", marginBottom: 12 }]}>
@@ -1243,10 +1243,10 @@ export default function ManualDetail() {
                       <MaterialIcons name="book" size={28} color="#9d00d4" />
                     </View>
                     <View style={{ flex: 1, marginLeft: 14 }}>
-                      <Text style={{ fontSize: 14 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", marginBottom: 4 }} numberOfLines={2}>
+                      <Text style={{ fontSize: 14 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", marginBottom: 4 }} numberOfLines={2}>
                         {book}
                       </Text>
-                      <Text style={{ fontSize: 12 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#888888" : "#999999" }}>
+                      <Text style={{ fontSize: 12 * scale, fontFamily: "Manrope_400Regular", color: isDarkMode ? "#888888" : "#999999" }}>
                         Recommended Read
                       </Text>
                     </View>
@@ -1261,17 +1261,17 @@ export default function ManualDetail() {
                 <View style={{ width: 60, height: 60, backgroundColor: isDarkMode ? "#2a1a3a" : "#e8d5f2", borderRadius: 8, justifyContent: "center", alignItems: "center", marginBottom: 18 }}>
                   <MaterialIcons name="menu-book" size={32} color="#9d00d4" />
                 </View>
-                <Text style={{ fontSize: 16 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textAlign: "center", marginBottom: 10 }}>
+                <Text style={{ fontSize: 16 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textAlign: "center", marginBottom: 10 }}>
                   DGC E-Library
                 </Text>
-                <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#b0b0b0" : "#666666", textAlign: "center", marginBottom: 18, lineHeight: 20 }}>
+                <Text style={{ fontSize: 13 * scale, fontFamily: "Manrope_400Regular", color: isDarkMode ? "#b0b0b0" : "#666666", textAlign: "center", marginBottom: 18, lineHeight: 20 }}>
                   Access the recommended books and other life-changing reads in the DGC E-library
                 </Text>
                 <TouchableOpacity 
                   onPress={() => Linking.openURL("https://bit.ly/DGCE-LIBRARY")} 
                   style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
                 >
-                  <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_600SemiBold", color: "#9d00d4" }}>
+                  <Text style={{ fontSize: 13 * scale, fontFamily: "Manrope_600SemiBold", color: "#9d00d4" }}>
                     Visit DGC E-library
                   </Text>
                   <MaterialIcons name="arrow-forward" size={16} color="#9d00d4" />
@@ -1285,10 +1285,10 @@ export default function ManualDetail() {
                   <View style={{ width: 60, height: 60, backgroundColor: isDarkMode ? "#2a1a3a" : "#e8d5f2", borderRadius: 8, justifyContent: "center", alignItems: "center", marginBottom: 18 }}>
                     <MaterialIcons name="chat" size={32} color="#9d00d4" />
                   </View>
-                  <Text style={{ fontSize: 16 * scale, fontFamily: "Poppins_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textAlign: "center", marginBottom: 10 }}>Have Feedback?</Text>
-                  <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_400Regular", color: isDarkMode ? "#b0b0b0" : "#666666", textAlign: "center", marginBottom: 18, lineHeight: 20 }}>Share your questions, testimonies, or feedback with us</Text>
+                  <Text style={{ fontSize: 16 * scale, fontFamily: "Manrope_600SemiBold", color: isDarkMode ? "#FFFFFF" : "#000000", textAlign: "center", marginBottom: 10 }}>Have Feedback?</Text>
+                  <Text style={{ fontSize: 13 * scale, fontFamily: "Manrope_400Regular", color: isDarkMode ? "#b0b0b0" : "#666666", textAlign: "center", marginBottom: 18, lineHeight: 20 }}>Share your questions, testimonies, or feedback with us</Text>
                   <TouchableOpacity onPress={() => Linking.openURL(`https://${manualData.feedbackLink}`)} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                    <Text style={{ fontSize: 13 * scale, fontFamily: "Poppins_600SemiBold", color: "#9d00d4" }}>Share Feedback</Text>
+                    <Text style={{ fontSize: 13 * scale, fontFamily: "Manrope_600SemiBold", color: "#9d00d4" }}>Share Feedback</Text>
                     <MaterialIcons name="arrow-forward" size={16} color="#9d00d4" />
                   </TouchableOpacity>
                 </View>
@@ -1317,7 +1317,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { 
     fontWeight: "600", 
-    fontFamily: "Poppins_600SemiBold", 
+    fontFamily: "Manrope_600SemiBold", 
     letterSpacing: 1 
   },
   heroContainer: { 
@@ -1341,7 +1341,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: { 
     fontSize: 14, 
-    fontFamily: "Poppins_600SemiBold", 
+    fontFamily: "Manrope_600SemiBold", 
     flex: 1, 
     textAlign: "center" 
   },
@@ -1361,7 +1361,7 @@ const styles = StyleSheet.create({
     alignItems: "center" 
   },
   loadingText: { 
-    fontFamily: "Poppins_400Regular" 
+    fontFamily: "Manrope_400Regular" 
   },
   errorContainer: { 
     padding: 14, 
@@ -1372,7 +1372,7 @@ const styles = StyleSheet.create({
     alignItems: "center" 
   },
   errorText: { 
-    fontFamily: "Poppins_400Regular", 
+    fontFamily: "Manrope_400Regular", 
     flex: 1 
   },
   scriptureContent: { 
@@ -1386,11 +1386,11 @@ const styles = StyleSheet.create({
     fontWeight: "700", 
     color: "#9d00d4", 
     marginTop: 2, 
-    fontFamily: "Poppins_700Bold" 
+    fontFamily: "Manrope_700Bold" 
   },
   verseText: { 
     flex: 1, 
-    fontFamily: "Poppins_400Regular" 
+    fontFamily: "Manrope_400Regular" 
   },
   popupContainer: {
     borderRadius: 16,
@@ -1413,7 +1413,7 @@ const styles = StyleSheet.create({
   },
   popupTitle: {
     fontSize: 18,
-    fontFamily: "Poppins_600SemiBold",
+    fontFamily: "Manrope_600SemiBold",
     flex: 1,
   },
   popupCloseBtn: {

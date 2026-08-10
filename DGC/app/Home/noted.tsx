@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,12 +16,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomTabNavigation from "./BottomTabNavigation";
 import { useNavigation } from "./_navigationContext";
 
+const ACCENT = "#9d00d4";
+
 interface NoteItem {
   id: string;
   title: string;
   content: string;
   date: string;
 }
+
+// A handful of soft accent tints cycled per card so the grid doesn't read as
+// one flat block of identical cards — purely cosmetic, no data behind it.
+const CARD_ACCENTS_LIGHT = ["#f3e5fb", "#e8f0fe", "#fdece9", "#eafaf0"];
+const CARD_ACCENTS_DARK = ["#241a2e", "#1a2233", "#2b1c1a", "#16261e"];
 
 export default function Noted() {
   const { isDarkMode } = useNavigation();
@@ -32,16 +39,11 @@ export default function Noted() {
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Load notes from AsyncStorage
   const loadNotes = useCallback(async () => {
     try {
       setLoading(true);
       const savedNotes = await AsyncStorage.getItem("notes");
-      if (savedNotes) {
-        setNotes(JSON.parse(savedNotes));
-      } else {
-        setNotes([]);
-      }
+      setNotes(savedNotes ? JSON.parse(savedNotes) : []);
     } catch (error) {
       console.error("Error loading notes:", error);
       Alert.alert("Error", "Failed to load notes");
@@ -57,111 +59,94 @@ export default function Noted() {
   );
 
   const handleAddNote = () => {
-    router.push({
-      pathname: "/Home/Notepad",
-      params: { noteId: "null" },
-    });
+    router.push({ pathname: "/Home/Notepad", params: { noteId: "null" } });
   };
 
   const handleNotePress = (noteId: string) => {
-    router.push({
-      pathname: "/Home/Notepad",
-      params: { noteId },
-    });
+    router.push({ pathname: "/Home/Notepad", params: { noteId } });
   };
 
   const filteredNotes = notes.filter((note) =>
     note.title.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  // Responsive font sizes
-  const getResponsiveFontSize = (baseSize: number) => {
-    return isTablet ? baseSize * 0.8 : baseSize * 0.9;
-  };
+  const getResponsiveFontSize = (baseSize: number) => (isTablet ? baseSize * 0.8 : baseSize * 0.9);
+  const getResponsiveIconSize = (baseSize: number) => (isTablet ? baseSize * 0.7 : baseSize);
 
-  // Responsive icon sizes
-  const getResponsiveIconSize = (baseSize: number) => {
-    return isTablet ? baseSize * 0.7 : baseSize;
-  };
+  const accents = isDarkMode ? CARD_ACCENTS_DARK : CARD_ACCENTS_LIGHT;
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { backgroundColor: isDarkMode ? "#000000" : "#FFFFFF" },
-      ]}
-    >
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={[
-          styles.subtitle, 
-          { 
-            color: isDarkMode ? "#FFF" : "#000",
-            fontSize: getResponsiveFontSize(24)
-          }
-        ]}>
-          Notes
-        </Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? "#000000" : "#FFFFFF" }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+        <View style={styles.headerRow}>
+          <Text
+            style={[styles.subtitle, { color: isDarkMode ? "#FFF" : "#000", fontSize: getResponsiveFontSize(26) }]}
+          >
+            Notes
+          </Text>
+          {!loading && notes.length > 0 && (
+            <View style={[styles.countPill, { backgroundColor: isDarkMode ? "#241a2e" : "#f3e5fb" }]}>
+              <Text style={[styles.countPillText, { color: ACCENT }]}>{notes.length}</Text>
+            </View>
+          )}
+        </View>
 
         <View
           style={[
             styles.searchContainer,
             {
-              borderColor: isDarkMode ? "#333" : "#000",
-              backgroundColor: isDarkMode ? "#1a1a1a" : "#FFFFFF",
+              borderColor: isDarkMode ? "#2a2a2a" : "#ececec",
+              backgroundColor: isDarkMode ? "#141414" : "#f7f7f7",
             },
           ]}
         >
-          <Feather
-            name="search"
-            size={getResponsiveIconSize(16)}
-            color={isDarkMode ? "#666" : "#999"}
-          />
+          <Feather name="search" size={getResponsiveIconSize(17)} color={isDarkMode ? "#777" : "#999"} />
           <TextInput
-            style={[
-              styles.searchInput, 
-              { 
-                color: isDarkMode ? "#FFF" : "#000",
-                fontSize: getResponsiveFontSize(12)
-              }
-            ]}
-            placeholder="Search"
+            style={[styles.searchInput, { color: isDarkMode ? "#FFF" : "#000", fontSize: getResponsiveFontSize(13) }]}
+            placeholder="Search your notes"
             placeholderTextColor={isDarkMode ? "#666" : "#999"}
             value={searchText}
             onChangeText={setSearchText}
           />
+          {searchText.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchText("")}>
+              <MaterialIcons name="close" size={getResponsiveIconSize(18)} color={isDarkMode ? "#777" : "#999"} />
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Notes List or Empty State */}
         {loading ? (
           <View style={styles.centerContainer}>
-            <Text style={{ 
-              color: isDarkMode ? "#FFF" : "#000",
-              fontSize: getResponsiveFontSize(12)
-            }}>
-              Loading notes...
+            <Text style={{ color: isDarkMode ? "#888" : "#999", fontSize: getResponsiveFontSize(13) }}>
+              Loading notes…
             </Text>
           </View>
         ) : filteredNotes.length > 0 ? (
           <View style={styles.notesGrid}>
-            {filteredNotes.map((note) => (
+            {filteredNotes.map((note, index) => (
               <TouchableOpacity
                 key={note.id}
+                activeOpacity={0.75}
                 style={[
                   styles.noteCard,
-                  { backgroundColor: isDarkMode ? "#1a1a1a" : "#242424" }
+                  {
+                    backgroundColor: accents[index % accents.length],
+                    borderColor: isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+                  },
                 ]}
                 onPress={() => handleNotePress(note.id)}
               >
-                <Text style={[
-                  styles.noteTitle, 
-                  { fontSize: getResponsiveFontSize(12), color: isDarkMode ? "#FFF" : "#ffffffff" }
-                ]} numberOfLines={3}>
+                <MaterialIcons name="description" size={getResponsiveIconSize(16)} color={ACCENT} style={{ marginBottom: 8 }} />
+                <Text
+                  style={[styles.noteTitle, { fontSize: getResponsiveFontSize(13), color: isDarkMode ? "#F5F5F5" : "#1a1a1a" }]}
+                  numberOfLines={3}
+                >
                   {note.title || "Untitled Note"}
                 </Text>
-                <Text style={[
-                  styles.noteDate, 
-                  { fontSize: getResponsiveFontSize(10), color: isDarkMode ? "#999" : "#ffffffff" }
-                ]} numberOfLines={2}>
+                <Text
+                  style={[styles.noteDate, { fontSize: getResponsiveFontSize(10.5), color: isDarkMode ? "#9a9a9a" : "#777777" }]}
+                  numberOfLines={1}
+                >
                   {note.date}
                 </Text>
               </TouchableOpacity>
@@ -170,47 +155,28 @@ export default function Noted() {
         ) : (
           <View style={styles.centerContainer}>
             <View style={styles.emptyStateContent}>
-              <MaterialIcons
-                name="note"
-                size={getResponsiveIconSize(48)}
-                color={isDarkMode ? "#666" : "#ccc"}
-              />
-              <Text
-                style={[
-                  styles.emptyStateTitle,
-                  { 
-                    color: isDarkMode ? "#FFF" : "#000",
-                    fontSize: getResponsiveFontSize(16)
-                  },
-                ]}
-              >
-                No Notes Yet
+              <View style={[styles.emptyIconCircle, { backgroundColor: isDarkMode ? "#241a2e" : "#f3e5fb" }]}>
+                <MaterialIcons name="edit-note" size={getResponsiveIconSize(40)} color={ACCENT} />
+              </View>
+              <Text style={[styles.emptyStateTitle, { color: isDarkMode ? "#FFF" : "#000", fontSize: getResponsiveFontSize(17) }]}>
+                {searchText ? "No notes match your search" : "No notes yet"}
               </Text>
-              <Text
-                style={[
-                  styles.emptyStateSubtitle,
-                  { 
-                    color: isDarkMode ? "#999" : "#666",
-                    fontSize: getResponsiveFontSize(12)
-                  },
-                ]}
-              >
-                Create your first note 
+              <Text style={[styles.emptyStateSubtitle, { color: isDarkMode ? "#999" : "#666", fontSize: getResponsiveFontSize(13) }]}>
+                {searchText ? "Try a different keyword." : "Jot down what stands out as you read a manual."}
               </Text>
+              {!searchText && (
+                <TouchableOpacity style={styles.emptyStateCta} onPress={handleAddNote} activeOpacity={0.85}>
+                  <Feather name="plus" size={getResponsiveIconSize(15)} color="#FFFFFF" />
+                  <Text style={[styles.emptyStateCtaText, { fontSize: getResponsiveFontSize(13) }]}>New Note</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}
       </ScrollView>
 
-      <TouchableOpacity
-        style={[
-          styles.fab,
-          isTablet ? styles.fabTabletTop : styles.fabPhoneBottom,
-          { backgroundColor: isDarkMode ? "#1a1a1a" : "#000000" },
-        ]}
-        onPress={handleAddNote}
-      >
-        <Feather name="plus" size={getResponsiveIconSize(20)} color="#FFFFFF" />
+      <TouchableOpacity style={[styles.fab, isTablet ? styles.fabTabletTop : styles.fabPhoneBottom]} onPress={handleAddNote} activeOpacity={0.85}>
+        <Feather name="plus" size={getResponsiveIconSize(22)} color="#FFFFFF" />
       </TouchableOpacity>
 
       <BottomTabNavigation />
@@ -224,85 +190,121 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 18,
+  },
   subtitle: {
-    fontWeight: "700",
-    fontStyle: "italic",
-    marginBottom: 20,
-    fontFamily: "Poppins_700Bold",
+    fontFamily: "Manrope_800ExtraBold",
+  },
+  countPill: {
+    minWidth: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  countPillText: {
+    fontFamily: "Manrope_700Bold",
+    fontSize: 12,
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
     borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginBottom: 20,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    marginBottom: 22,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 10,
-    fontFamily: "Poppins_400Regular",
+    fontFamily: "Manrope_500Medium",
   },
   notesGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 100,
+    gap: 12,
   },
   noteCard: {
-    width: "48%",
-    borderRadius: 10,
-    padding: 12,
-    minHeight: 80,
-    justifyContent: "space-between",
+    width: "47.5%",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    minHeight: 104,
+    justifyContent: "flex-end",
   },
   noteTitle: {
-    fontWeight: "600",
-    fontFamily: "Poppins_600SemiBold",
-    lineHeight: 16,
+    fontFamily: "Manrope_700Bold",
+    lineHeight: 18,
+    marginBottom: 8,
   },
   noteDate: {
-    fontFamily: "Poppins_400Regular",
-    marginTop: 8,
+    fontFamily: "Manrope_500Medium",
   },
   centerContainer: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    minHeight: 300,
-    marginBottom: 100,
+    minHeight: 320,
   },
   emptyStateContent: {
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  emptyIconCircle: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
   },
   emptyStateTitle: {
-    fontWeight: "600",
-    marginTop: 12,
-    fontFamily: "Poppins_600SemiBold",
+    fontFamily: "Manrope_700Bold",
+    textAlign: "center",
   },
   emptyStateSubtitle: {
     marginTop: 6,
     textAlign: "center",
-    fontFamily: "Poppins_400Regular",
+    fontFamily: "Manrope_400Regular",
+    lineHeight: 19,
+  },
+  emptyStateCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: ACCENT,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    marginTop: 20,
+  },
+  emptyStateCtaText: {
+    fontFamily: "Manrope_700Bold",
+    color: "#FFFFFF",
   },
   fab: {
     position: "absolute",
-    right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 10,
+    right: 18,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 5,
+    backgroundColor: ACCENT,
+    shadowColor: ACCENT,
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 6,
   },
   fabPhoneBottom: {
-    bottom: 200,
+    bottom: 100,
   },
   fabTabletTop: {
     top: 880,

@@ -1,47 +1,32 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
   useWindowDimensions,
-  Image,
   PanResponder,
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useNavigation } from "./_navigationContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BlurView } from "expo-blur";
 import { MaterialIcons } from "@expo/vector-icons";
+import {
+  fetchAllManualsFromHygraph,
+  toCompatManual,
+  computeNextUpcomingISO,
+  isManualUnlocked,
+  type CompatManual,
+} from "../../lib/hygraph";
 
-const API_BASE_URL = "https://dgc-backend.onrender.com";
-const STORAGE_KEY = "recommended_manuals";
+const STORAGE_KEY = "recommended_manuals_hygraph";
 const LAST_READ_KEY = "last_read_manual";
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
+const RECOMMENDED_COUNT = 4;
 
-interface ManualItem {
-  _id: string;
-  id: string;
-  title: string;
-  theme: string;
-  memoryVerse: string;
-  month: string;
-  date: string;
-  coverBannerImg?: string;
-  text?: string;
-  introduction?: string;
-  mainPoints?: Array<{
-    title: string;
-    description: string;
-    references: string[];
-  }>;
-  classDiscussion?: string;
-  conclusion?: string;
-  week?: number;
-  order?: number;
-}
+type ManualItem = CompatManual;
 
 interface SkeletonLoaderProps {
   isDarkMode: boolean;
@@ -136,114 +121,15 @@ interface RecommendedProps {
   isDarkMode?: boolean;
 }
 
-// Assign global order across ALL manuals
-const assignGlobalOrderToManuals = (manuals: ManualItem[]): ManualItem[] => {
-  return manuals.map((manual, index) => ({
-    ...manual,
-    order: index + 1,
-  }));
-};
-
-// Main unlock function - Based on manual ORDER, not date
-const isManualUnlocked = (month: string, dateString: string, order: number = 0): boolean => {
-  console.log("Recommended unlock check:", {
-    month: month,
-    date: dateString,
-    order: order
-  });
-  
-  // Get current date
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  
-  try {
-    // Jan 4th (order 1 or order 0) is always unlocked
-    if (month === "January" && (order === 0 || order === 1)) {
-      console.log("✓ January 4th (order 1) - Always unlocked");
-      return true;
-    }
-    
-    // Base unlock date: January 4th
-    const baseUnlockDate = new Date(currentYear, 0, 4, 0, 0, 0, 0);
-    
-    if (order <= 0) {
-      console.log("✗ Invalid order:", order);
-      return false;
-    }
-    
-    const daysToAdd = (order - 1) * 4;
-    const unlockDate = new Date(baseUnlockDate);
-    unlockDate.setDate(baseUnlockDate.getDate() + daysToAdd);
-    
-    // Reset time to midnight for proper date comparison
-    unlockDate.setHours(0, 0, 0, 0);
-    currentDate.setHours(0, 0, 0, 0);
-    
-    console.log("Order-based unlock calculation:", {
-      month: month,
-      order: order,
-      daysToAdd: daysToAdd,
-      unlockDate: unlockDate.toDateString(),
-      currentDate: currentDate.toDateString(),
-      isUnlocked: currentDate >= unlockDate
-    });
-    
-    // Check if current date is on or after the unlock date
-    if (currentDate >= unlockDate) {
-      console.log(`✓ Unlocking order ${order} (unlocked on ${unlockDate.toDateString()})`);
-      return true;
-    } else {
-      console.log(`✗ Locking order ${order} (unlocks on ${unlockDate.toDateString()})`);
-      return false;
-    }
-    
-  } catch (error) {
-    console.error("Error in unlock logic:", error);
-    return false;
-  }
-};
-
-// Get the 4 unlocked manuals to display - rotates based on current date
-const getDisplayManuals = (allManuals: ManualItem[]): ManualItem[] => {
-  const currentDate = new Date();
-  currentDate.setHours(0, 0, 0, 0);
-  
-  const currentYear = currentDate.getFullYear();
-  const baseUnlockDate = new Date(currentYear, 0, 4, 0, 0, 0, 0);
-  
-  // Calculate days elapsed since January 4th
-  const daysElapsed = Math.floor((currentDate.getTime() - baseUnlockDate.getTime()) / (1000 * 60 * 60 * 24));
-  
-  // Calculate the window: every 4 days, show the next 4 manuals
-  const windowIndex = Math.floor(daysElapsed / 4);
-  
-  console.log("=== DISPLAY WINDOW CALCULATION ===");
-  console.log({
-    currentDate: currentDate.toDateString(),
-    daysElapsed: daysElapsed,
-    windowIndex: windowIndex,
-    startOrder: windowIndex + 1,
-    endOrder: windowIndex + 4
-  });
-  
-  // Get 4 manuals starting from the calculated window
-  const displayManuals = allManuals.filter(manual => {
-    const order = manual.order || 0;
-    return order > windowIndex && order <= windowIndex + 4;
-  });
-  
-  console.log("=== MANUALS TO DISPLAY ===");
-  displayManuals.forEach(m => {
-    console.log({
-      title: m.title,
-      order: m.order,
-      month: m.month,
-      date: m.date
-    });
-  });
-  console.log("=== END DISPLAY MANUALS ===");
-  
-  return displayManuals;
+// "Recommended" = the most recently unlocked manuals (most recent first) —
+// with the old REST backend's rolling 4-day order-window gone (see
+// lib/hygraph.ts's isManualUnlocked), this is the simplest faithful
+// replacement: whatever's currently readable, freshest first.
+const getDisplayManuals = (allManuals: ManualItem[], nextUpcomingISO: string | null): ManualItem[] => {
+  return allManuals
+    .filter((manual) => isManualUnlocked(manual, nextUpcomingISO))
+    .sort((a, b) => b.studyDate.localeCompare(a.studyDate))
+    .slice(0, RECOMMENDED_COUNT);
 };
 
 export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedProps) {
@@ -254,10 +140,13 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
 
   const [loading, setLoading] = useState(true);
   const [recommendedData, setRecommendedData] = useState<ManualItem[]>([]);
+  const [allManuals, setAllManuals] = useState<ManualItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [lastReadManual, setLastReadManual] = useState<ManualItem | null>(null);
   const [loadingLastRead, setLoadingLastRead] = useState(true);
   const [scale, setScale] = useState(1);
+
+  const nextUpcomingISO = useMemo(() => computeNextUpcomingISO(allManuals), [allManuals]);
   
   const lastDistanceRef = useRef(0);
   const panResponderRef = useRef<any>(null);
@@ -354,68 +243,19 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
       setLoading(true);
       setError(null);
 
-      // Always fetch fresh data from backend first
-      const recResponse = await fetch(`${API_BASE_URL}/api/manuals/recommended`);
+      const rawManuals = await fetchAllManualsFromHygraph();
+      const compatManuals = rawManuals.map((raw, index) => toCompatManual(raw, index + 1));
 
-      if (!recResponse.ok) {
-        throw new Error(`HTTP error! status: ${recResponse.status}`);
-      }
-
-      const recData = await recResponse.json();
-
-      if (recData.success && recData.data && recData.data.length > 0) {
-        console.log("Recommended data fetched:", recData.data);
-        console.log("Total items from backend:", recData.data.length);
-        console.log("IDs:", recData.data.map((item: any) => item._id || item.id));
-        
-        // Assign global order across all manuals
-        const dataWithGlobalOrder = assignGlobalOrderToManuals(recData.data);
-        
-        // Log all manuals with their orders
-        console.log("=== ALL MANUALS WITH ORDERS ===");
-        dataWithGlobalOrder.forEach(item => {
-          console.log({
-            order: item.order,
-            title: item.title,
-            month: item.month,
-            date: item.date
-          });
-        });
-        console.log("=== END ALL MANUALS ===");
-        
-        // Save ALL data to storage
-        await saveToStorage(dataWithGlobalOrder);
-        
-        // Get only the 4 manuals to display based on current date window
-        const dataToShow = getDisplayManuals(dataWithGlobalOrder);
-        setRecommendedData(dataToShow);
-        
-        // Log unlock status for displayed manuals
-        console.log("=== RECOMMENDED UNLOCK STATUS ===");
-        dataToShow.forEach(item => {
-          const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
-          console.log({
-            title: item.title,
-            date: item.date,
-            month: item.month,
-            order: item.order,
-            isUnlocked: isUnlocked ? "UNLOCKED" : "LOCKED"
-          });
-        });
-        console.log("=== END RECOMMENDED UNLOCK STATUS ===");
-      } else {
-        throw new Error("No data from backend");
-      }
+      await saveToStorage(compatManuals);
+      setAllManuals(compatManuals);
+      setRecommendedData(getDisplayManuals(compatManuals, computeNextUpcomingISO(compatManuals)));
     } catch (err) {
-      console.error("Error fetching recommendations:", err);
-      
-      // Fall back to cached data if fetch fails
+      console.error("Error fetching recommendations from Hygraph:", err);
+
       const cachedData = await loadFromStorage();
       if (cachedData && cachedData.length > 0) {
-        console.log("Using cached data, total items:", cachedData.length);
-        const dataWithGlobalOrder = assignGlobalOrderToManuals(cachedData);
-        const dataToShow = getDisplayManuals(dataWithGlobalOrder);
-        setRecommendedData(dataToShow);
+        setAllManuals(cachedData);
+        setRecommendedData(getDisplayManuals(cachedData, computeNextUpcomingISO(cachedData)));
       } else {
         setError(err instanceof Error ? err.message : "Unknown error occurred");
       }
@@ -464,21 +304,12 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
   const versesFontSize = getFontSize(12, 0.85);
   const categoryFontSize = getFontSize(11, 0.85);
   const dateFontSize = getFontSize(11, 0.85);
-  const headerFontSize = getFontSize(12, 0.9);
+  // Matches "Your Notes"' header size on the same Home screen (notes.tsx).
+  const headerFontSize = getFontSize(13, 0.9) + 3;
   const seeAllFontSize = getFontSize(12, 0.85);
-
-  // Responsive image size
-  const getImageSize = () => {
-    if (isTablet) {
-      return getResponsiveSize(80);
-    }
-    return getResponsiveSize(80);
-  };
 
   const itemSize = {
     width: width - getResponsiveSize(32),
-    imageSize: getImageSize(),
-    imageHeight: getImageSize(),
   };
 
   const getPadding = () => {
@@ -490,15 +321,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
 
   const handleCardPress = useCallback(
     (item: ManualItem) => {
-      const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
-      console.log("Recommended manual clicked:", {
-        title: item.title,
-        month: item.month,
-        date: item.date,
-        order: item.order,
-        isUnlocked: isUnlocked
-      });
-      
+      const isUnlocked = isManualUnlocked(item, nextUpcomingISO);
       if (!isUnlocked) {
         return;
       }
@@ -519,7 +342,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
         });
       }
     },
-    [router]
+    [router, nextUpcomingISO]
   );
 
   const handleSeeAll = () => {
@@ -528,21 +351,21 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
 
   const handleContinueRead = useCallback(() => {
     if (lastReadManual) {
-      const isUnlocked = isManualUnlocked(lastReadManual.month, lastReadManual.date, lastReadManual.order || 0);
+      const isUnlocked = isManualUnlocked(lastReadManual, nextUpcomingISO);
       if (!isUnlocked) {
         return;
       }
-      
+
       router.push({
         pathname: "/Home/ManualDetail",
         params: { manual: JSON.stringify(lastReadManual) },
       });
     }
-  }, [lastReadManual, router]);
+  }, [lastReadManual, router, nextUpcomingISO]);
 
   const renderRecommendedItem = ({ item }: { item: ManualItem }) => {
-    const isUnlocked = isManualUnlocked(item.month, item.date, item.order || 0);
-    
+    const isUnlocked = isManualUnlocked(item, nextUpcomingISO);
+
     return (
       <TouchableOpacity
         activeOpacity={isUnlocked ? 0.7 : 1}
@@ -560,51 +383,30 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
           elevation: 2,
         }}
       >
-        {item.coverBannerImg && (
-          <View style={{ position: "relative" }}>
-            <Image
-              source={{ uri: item.coverBannerImg }}
-              style={{
-                width: itemSize.imageSize * scale,
-                height: itemSize.imageHeight * scale,
-                borderRadius: getResponsiveSize(10) * scale,
-                marginRight: getResponsiveSize(10) * scale,
-                resizeMode: "cover",
-              }}
-            />
-            {!isUnlocked && (
-              <BlurView
-                intensity={90}
-                tint={isDarkMode ? "dark" : "light"}
-                style={[
-                  StyleSheet.absoluteFillObject,
-                  {
-                    width: itemSize.imageSize * scale,
-                    height: itemSize.imageHeight * scale,
-                    borderRadius: getResponsiveSize(10) * scale,
-                    marginRight: getResponsiveSize(10) * scale,
-                    overflow: "hidden",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  },
-                ]}
-              >
-                <MaterialIcons 
-                  name="lock" 
-                  size={isTablet ? 20 : 24}
-                  color={isDarkMode ? "#FFF" : "#000"} 
-                />
-              </BlurView>
-            )}
-          </View>
-        )}
+        <View
+          style={{
+            width: getResponsiveSize(40) * scale,
+            height: getResponsiveSize(40) * scale,
+            borderRadius: getResponsiveSize(20) * scale,
+            marginRight: getResponsiveSize(10) * scale,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: isUnlocked ? "rgba(157,0,212,0.12)" : isDarkMode ? "#2a2a2a" : "#eeeeee",
+          }}
+        >
+          <MaterialIcons
+            name={isUnlocked ? "menu-book" : "lock"}
+            size={isTablet ? 16 : 18}
+            color={isUnlocked ? "#9d00d4" : isDarkMode ? "#666" : "#aaa"}
+          />
+        </View>
 
         <View style={{ flex: 1 }}>
           <Text
             numberOfLines={2}
             style={{
               fontSize: titleFontSize * scale,
-              fontFamily: "Poppins_600SemiBold",
+              fontFamily: "Manrope_600SemiBold",
               color: isUnlocked ? (isDarkMode ? "#ffffff" : "#000000") : (isDarkMode ? "#888" : "#999"),
               marginBottom: getResponsiveSize(4) * scale,
               lineHeight: titleFontSize * 1.3, 
@@ -617,7 +419,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
             numberOfLines={1}
             style={{
               fontSize: versesFontSize * scale,
-              fontFamily: "Poppins_400Regular",
+              fontFamily: "Manrope_400Regular",
               color: isUnlocked ? (isDarkMode ? "#b0b0b0" : "#666666") : (isDarkMode ? "#666" : "#AAA"),
               marginBottom: getResponsiveSize(6) * scale,
             }}
@@ -645,7 +447,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
                 numberOfLines={1}
                 style={{
                   fontSize: categoryFontSize * scale,
-                  fontFamily: "Poppins_600SemiBold",
+                  fontFamily: "Manrope_600SemiBold",
                   color: "#ffffff",
                 }}
               >
@@ -657,7 +459,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
               numberOfLines={1}
               style={{
                 fontSize: dateFontSize * scale,
-                fontFamily: "Poppins_400Regular",
+                fontFamily: "Manrope_400Regular",
                 color: isUnlocked ? (isDarkMode ? "#b0b0b0" : "#666666") : (isDarkMode ? "#777" : "#999"),
               }}
             >
@@ -693,7 +495,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
           <Text
             style={{
               fontSize: headerFontSize * scale,
-              fontFamily: "Poppins_600SemiBold",
+              fontFamily: "Manrope_600SemiBold",
               color: isDarkMode ? "#ffffff" : "#000000",
               marginBottom: getResponsiveSize(12) * scale,
             }}
@@ -707,7 +509,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
           <Text
             style={{
               fontSize: headerFontSize * scale,
-              fontFamily: "Poppins_600SemiBold",
+              fontFamily: "Manrope_600SemiBold",
               color: isDarkMode ? "#ffffff" : "#000000",
               marginBottom: getResponsiveSize(12) * scale,
             }}
@@ -751,7 +553,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
         <Text
           style={{
             fontSize: headerFontSize * scale,
-            fontFamily: "Poppins_600SemiBold",
+            fontFamily: "Manrope_600SemiBold",
             color: isDarkMode ? "#ffffff" : "#000000",
           }}
         >
@@ -762,7 +564,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
           <Text
             style={{
               fontSize: seeAllFontSize * scale,
-              fontFamily: "Poppins_500Medium",
+              fontFamily: "Manrope_500Medium",
               color: isDarkMode ? "#ffffffff" : "#000000",
               textDecorationLine: "underline",
             }}
@@ -782,7 +584,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
           <Text
             style={{
               fontSize: titleFontSize * scale,
-              fontFamily: "Poppins_600SemiBold",
+              fontFamily: "Manrope_600SemiBold",
               color: "#FF6B6B",
               marginBottom: getResponsiveSize(8) * scale,
             }}
@@ -792,7 +594,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
           <Text
             style={{
               fontSize: versesFontSize * scale,
-              fontFamily: "Poppins_400Regular",
+              fontFamily: "Manrope_400Regular",
               color: isDarkMode ? "#b0b0b0" : "#666666",
               textAlign: "center",
             }}
@@ -812,7 +614,7 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
             <Text
               style={{
                 color: "#ffffff",
-                fontFamily: "Poppins_600SemiBold",
+                fontFamily: "Manrope_600SemiBold",
                 fontSize: versesFontSize * scale,
               }}
             >
@@ -849,18 +651,49 @@ export default function Recommended({ isDarkMode: propIsDarkMode }: RecommendedP
       ) : (
         <View
           style={{
-            paddingVertical: getResponsiveSize(20) * scale,
+            paddingVertical: getResponsiveSize(36) * scale,
+            paddingHorizontal: getResponsiveSize(24) * scale,
             alignItems: "center",
+            borderRadius: getResponsiveSize(16) * scale,
+            borderWidth: 1,
+            borderColor: isDarkMode ? "#2a2a2a" : "#eeeeee",
+            backgroundColor: isDarkMode ? "#111111" : "#fafafa",
           }}
         >
+          <View
+            style={{
+              width: getResponsiveSize(64) * scale,
+              height: getResponsiveSize(64) * scale,
+              borderRadius: getResponsiveSize(32) * scale,
+              backgroundColor: isDarkMode ? "rgba(157,0,212,0.15)" : "rgba(157,0,212,0.08)",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: getResponsiveSize(14) * scale,
+            }}
+          >
+            <MaterialIcons name="auto-awesome" size={getResponsiveSize(28) * scale} color="#9d00d4" />
+          </View>
           <Text
             style={{
               fontSize: titleFontSize * scale,
-              fontFamily: "Poppins_400Regular",
-              color: isDarkMode ? "#b0b0b0" : "#666666",
+              fontFamily: "Manrope_700Bold",
+              color: isDarkMode ? "#ffffff" : "#1a1a1a",
+              marginBottom: getResponsiveSize(6) * scale,
+              textAlign: "center",
             }}
           >
-            No recommendations available yet
+            Nothing recommended yet
+          </Text>
+          <Text
+            style={{
+              fontSize: versesFontSize * scale,
+              fontFamily: "Manrope_400Regular",
+              color: isDarkMode ? "#999999" : "#777777",
+              textAlign: "center",
+              lineHeight: (versesFontSize + 6) * scale,
+            }}
+          >
+            Once new manuals unlock, we'll surface the ones picked for you right here.
           </Text>
         </View>
       )}
@@ -896,7 +729,7 @@ function getResponsiveContinueReadStyles(
     },
     continueReadText: {
       fontSize: isSmallPhone ? titleFontSize * 0.85 * scale : titleFontSize * scale,
-      fontFamily: "Poppins_600SemiBold",
+      fontFamily: "Manrope_600SemiBold",
       flex: 1,
     },
     continueReadArrow: {

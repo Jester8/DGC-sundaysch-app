@@ -1,12 +1,12 @@
 import { Stack, usePathname } from "expo-router";
 import {
   useFonts,
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-} from "@expo-google-fonts/poppins";
-import { PlayfairDisplay_400Regular_Italic } from "@expo-google-fonts/playfair-display";
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from "@expo-google-fonts/manrope";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useRef } from "react";
 import { View, BackHandler, Platform, PanResponder } from "react-native";
@@ -17,11 +17,11 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Poppins_400Regular,
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-    PlayfairDisplay_400Regular_Italic,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
   });
 
   const pathname = usePathname();

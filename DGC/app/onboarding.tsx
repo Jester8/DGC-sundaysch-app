@@ -155,7 +155,7 @@ export default function Onboarding() {
             <Text
               style={{
                 fontSize: getResponsiveFontSize(14),
-                fontFamily: "Poppins_500Medium",
+                fontFamily: "Manrope_500Medium",
                 color: "#FFFFFF",
               }}
             >
@@ -179,7 +179,8 @@ export default function Onboarding() {
             fontSize: getResponsiveFontSize(21),
             color: "#FFFFFF",
             marginBottom: 6,
-            fontFamily: "PlayfairDisplay_400Regular_Italic",
+            fontFamily: "Manrope_600SemiBold",
+            fontStyle: "italic",
           }}
         >
           {item.title}
@@ -190,7 +191,7 @@ export default function Onboarding() {
             color: "#FFFFFF",
             marginBottom: index === slides.length - 1 ? 10 : 14,
             lineHeight: getResponsiveFontSize(40),
-            fontFamily: "Poppins_700Bold",
+            fontFamily: "Manrope_700Bold",
           }}
         >
           {item.subtitle}
@@ -203,7 +204,7 @@ export default function Onboarding() {
               color: "#FFFFFF",
               opacity: 0.9,
               lineHeight: getResponsiveFontSize(20),
-              fontFamily: "Poppins_400Regular",
+              fontFamily: "Manrope_400Regular",
               marginBottom: 25,
             }}
           >
@@ -234,7 +235,7 @@ export default function Onboarding() {
             <Text
               style={{
                 fontSize: getResponsiveFontSize(18),
-                fontFamily: "Poppins_600SemiBold",
+                fontFamily: "Manrope_600SemiBold",
                 color: "#49006C",
               }}
             >
